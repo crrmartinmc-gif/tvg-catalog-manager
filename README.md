@@ -1,40 +1,34 @@
 # TVG Catalog Manager
 
-Primera versión frontend de TVG Catalog Manager, preparada para publicar en GitHub y ejecutar localmente.
+Aplicación de catálogo e inventario en español, construida con React, TypeScript y Vite.
 
-## Requisitos
-- Node.js 20 o superior
-- npm
+## Desarrollo
 
-## Ejecutar
-```bash
-npm install
+Requiere Node.js 20 o superior y npm.
+
+```sh
+npm ci
 npm run dev
 ```
-Abrir la URL que muestra Vite (normalmente http://localhost:5173).
 
-## Generar versión de publicación
-```bash
+Vite sirve la aplicación bajo `/tvg-catalog-manager/`.
+
+```sh
 npm run build
+npm run preview
 ```
-El sitio compilado queda en `dist/`.
 
-## Qué incluye esta primera versión
-- Panel de resumen del catálogo.
-- Alta de productos con imagen desde cámara o galería.
-- Edición y eliminación de productos.
-- Búsqueda y filtros por categoría y estado.
-- Control inicial de stock y precios.
-- Datos guardados en el navegador mediante `localStorage`.
-- Exportación CSV del catálogo.
+La compilación ejecuta la comprobación de TypeScript y genera `dist/`. GitHub Actions valida el proyecto y el flujo de despliegue publica en GitHub Pages cuando Pages está configurado para usar Actions.
 
-## Importante
-Esta es una base funcional de frontend. Los productos se guardan en el navegador del dispositivo y todavía no se sincronizan entre celulares o computadoras. Para producción multiusuario habrá que conectar una base de datos y almacenamiento de imágenes, además de implementar autenticación y la integración oficial con Mercado Libre (OAuth/API). No ingresar credenciales de Mercado Libre en esta versión.
+## Funciones
 
-## Publicar en GitHub
-1. Crear el repositorio `tvg-catalog-manager`.
-2. Descomprimir este ZIP.
-3. Subir el contenido de la carpeta (incluidos `package.json`, `index.html`, `src/`, etc.) a la raíz del repositorio.
-4. En GitHub, abrir **Add file → Upload files**, arrastrar los archivos y confirmar el commit.
+- Alta, edición y eliminación con confirmación.
+- SKU único, categorías, precios en ARS y stock entero no negativo.
+- Imágenes JPG, PNG y WebP de hasta 2 MB desde el dispositivo.
+- Búsqueda por nombre o SKU, filtros por categoría, estado y stock bajo.
+- Resumen de productos activos, stock bajo y valor del inventario.
+- Exportación CSV de los productos filtrados, compatible con Excel y con protección contra fórmulas.
+- Guardado local persistente en el navegador, con aviso si falla el almacenamiento.
+- Diseño adaptable a celulares y computadoras.
 
-No subir `node_modules` ni `dist`.
+El catálogo comienza vacío. Los datos se guardan en este navegador y dispositivo; no hay sincronización ni respaldo remoto. Exportá CSV periódicamente (no incluye las imágenes). No requiere credenciales ni conexiones a Mercado Libre. Para multiusuario hace falta incorporar backend, almacenamiento y autenticación.

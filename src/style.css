@@ -674,3 +674,136 @@ textarea:focus-visible {
   max-width: 300px;
   line-height: 1.5;
 }
+.heading-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.barcode-dialog {
+  background: white;
+  border-radius: 14px;
+  padding: 26px;
+  width: 560px;
+  max-width: 100%;
+  max-height: 94vh;
+  overflow: auto;
+}
+.print-label {
+  text-align: center;
+  background: white;
+  color: black;
+  padding: 18px 0;
+  margin: 15px 0;
+}
+.print-label h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.print-label svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 15px auto;
+}
+.sku-help {
+  font-size: 11px;
+  margin: 12px 0;
+}
+.scan-view {
+  position: relative;
+  background: #17241f;
+  border-radius: 10px;
+  margin: 16px 0;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+}
+.scan-view video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.scan-guide {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.manual-scan {
+  padding: 0;
+  margin-top: 20px;
+  width: auto;
+  box-shadow: none;
+  border-top: 1px solid #e4ebe6;
+  border-radius: 0;
+}
+.barcode-dialog .modalbuttons {
+  flex-wrap: wrap;
+}
+@media (max-width: 760px) {
+  .heading {
+    flex-wrap: wrap;
+  }
+  .heading-actions {
+    justify-content: flex-start;
+  }
+  .barcode-dialog {
+    padding: 20px;
+  }
+  .heading-actions button {
+    font-size: 11px;
+  }
+}
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .print-label,
+  .print-label * {
+    visibility: visible !important;
+  }
+  .print-label {
+    position: fixed;
+    left: 0;
+    top: 0;
+    margin: 0;
+    padding: 8mm;
+    width: 100%;
+    background: white;
+  }
+  .overlay {
+    position: static;
+    background: white;
+    backdrop-filter: none;
+  }
+  .barcode-dialog {
+    overflow: visible;
+    max-height: none;
+  }
+  .print-label svg {
+    max-width: 100%;
+    height: auto;
+  }
+  @page {
+    margin: 10mm;
+  }
+}
+@media print {
+  .layout {
+    display: block;
+    min-height: 0;
+  }
+  .layout > aside,
+  .layout > main {
+    display: none !important;
+  }
+  .barcode-dialog {
+    width: 100%;
+    padding: 0;
+    max-height: none;
+  }
+}

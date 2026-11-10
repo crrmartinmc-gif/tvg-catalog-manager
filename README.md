@@ -40,3 +40,14 @@ El catálogo se guarda en la planilla familiar y se conecta automáticamente, si
 El propietario debe [actualizar la implementación de Apps Script](integrations/google-sheets/README.md) una vez para habilitar el acceso sin clave. Cualquier persona con acceso a la app puede leer o modificar el catálogo.
 
 Pruebas del backend con servicios Google simulados: `npm test`. No reemplazan la comprobación contra la implementación real de Google.
+
+## Códigos de barras y escáner
+
+- Al crear un producto, el SKU se completa con un código único sugerido. Se puede personalizar usando letras sin acentos, números o guiones.
+- Al guardar un producto nuevo se muestra su etiqueta Code 128. El botón de código de barras de cada fila permite volver a abrirla, descargar el SVG o imprimirla.
+- Cada combinación de producto, color y talle debe tener su propio SKU y stock. Si cambia el SKU, se debe reemplazar la etiqueta impresa.
+- **Escanear producto**, junto a Nuevo producto, abre la cámara y busca coincidencia exacta con el SKU guardado. También permite ingresar el código manualmente. Puede identificar códigos comerciales existentes si su valor se guardó como SKU.
+- La cámara requiere HTTPS y permiso del navegador. El escáner usa la cámara trasera cuando está disponible y detiene la captura al cerrar o identificar un producto. La lectura se procesa en el dispositivo; no se envían imágenes de la cámara a Sheets.
+- No hace falta actualizar Apps Script para esta función: utiliza el SKU existente.
+
+Prueba de navegador del circuito de etiquetas y búsqueda: con Vite iniciado en el puerto 5173, ejecutá `npm run test:browser`. Usa Chromium del sistema o el instalado por Playwright (`npx playwright install chromium`); admite `CHROMIUM_PATH`. Simula la API de Sheets, comprueba lectura real del Code128 generado y no modifica la planilla. La cámara se validó además con una fuente de video simulada; el permiso y enfoque deben comprobarse en el celular real.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Package,
@@ -10,8 +10,16 @@ import {
   X,
   LayoutDashboard,
   Boxes,
+  ScanLine,
+  Barcode,
 } from "lucide-react";
 import "./style.css";
+const BarcodeLabel = lazy(() =>
+  import("./BarcodeLabel").then((m) => ({ default: m.BarcodeLabel })),
+);
+const ScanProduct = lazy(() =>
+  import("./ScanProduct").then((m) => ({ default: m.ScanProduct })),
+);
 import {
   DEFAULT_SHEETS_ENDPOINT,
   sheetsRequest,
@@ -22,7 +30,8 @@ import {
 const empty = (): Product => ({
   id: crypto.randomUUID(),
   name: "",
-  sku: "",
+  sku:
+    "TVG-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase(),
   category: "General",
   description: "",
   color: "",
@@ -45,6 +54,8 @@ function App() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [label, setLabel] = useState<Product | null>(null);
   const [draft, setDraft] = useState<Product | null>(null);
   const [view, setView] = useState("catalog");
   const [notice, setNotice] = useState("");
@@ -53,11 +64,11 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [syncError, setSyncError] = useState(false);
   const pending = useRef(false);
-  const draftRef = useRef(draft);
-  draftRef.current = draft;
+  const interactionOpen = useRef(false);
+  interactionOpen.current = !!draft || scanning || !!label;
   const refreshRef = useRef<() => Promise<void>>(async () => {});
   async function refresh() {
-    if (pending.current || draftRef.current) return;
+    if (pending.current || interactionOpen.current) return;
     pending.current = true;
     setBusy(true);
     try {
@@ -143,6 +154,12 @@ function App() {
       setError("Completá los campos con valores válidos.");
       return;
     }
+    if (!/^[\x20-\x7e]+$/.test(draft.sku.trim())) {
+      setError(
+        "Usá un SKU con letras sin acentos, números o guiones para generar su código de barras.",
+      );
+      return;
+    }
     if (
       products.some(
         (p) =>
@@ -170,7 +187,9 @@ function App() {
           : [...products, p],
       )
     ) {
+      const isNew = !products.some((x) => x.id === p.id);
       setDraft(null);
+      if (isNew) setLabel(p);
       setNotice("Producto guardado correctamente.");
     }
   }
@@ -333,17 +352,26 @@ function App() {
               </h1>
               <p>Todo lo que vendés, en un solo lugar.</p>
             </div>
-            <button
-              className="primary"
-              disabled={busy || syncError || !connection}
-              onClick={() => {
-                setError("");
-                setDraft(empty());
-              }}
-            >
-              <Plus size={18} />
-              Nuevo producto
-            </button>
+            <div className="heading-actions">
+              <button
+                disabled={!connection || busy || syncError}
+                onClick={() => setScanning(true)}
+              >
+                <ScanLine size={18} />
+                Escanear producto
+              </button>
+              <button
+                className="primary"
+                disabled={busy || syncError || !connection}
+                onClick={() => {
+                  setError("");
+                  setDraft(empty());
+                }}
+              >
+                <Plus size={18} />
+                Nuevo producto
+              </button>
+            </div>
           </div>
           {error && (
             <div role="alert" className="error">
@@ -505,6 +533,12 @@ function App() {
                         <td>
                           <div className="actions">
                             <button
+                              aria-label={"Código de barras de " + p.name}
+                              onClick={() => setLabel(p)}
+                            >
+                              <Barcode size={18} />
+                            </button>
+                            <button
                               aria-label={"Editar " + p.name}
                               disabled={busy || syncError || !connection}
                               onClick={() => {
@@ -620,6 +654,11 @@ function App() {
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               />
             </label>
+            <p className="sku-help">
+              El SKU se genera automáticamente. Podés personalizarlo con letras
+              sin acentos, números o guiones. Su código de barras aparece al
+              guardar.
+            </p>
             <div className="formrow">
               <label>
                 SKU
@@ -771,6 +810,38 @@ function App() {
           </form>
         </div>
       )}
+      <Suspense
+        fallback={
+          <div className="overlay">
+            <div className="barcode-dialog" role="status">
+              Cargando…
+            </div>
+          </div>
+        }
+      >
+        {label && (
+          <BarcodeLabel product={label} onClose={() => setLabel(null)} />
+        )}
+        {scanning && (
+          <ScanProduct
+            onClose={() => setScanning(false)}
+            onFind={(code) => {
+              const found = products.find(
+                (p) => p.sku.toLowerCase() === code.toLowerCase(),
+              );
+              if (!found) return false;
+              setScanning(false);
+              setQuery("");
+              setCategory("");
+              setStatus("");
+              setError("");
+              setDraft({ ...found });
+              setNotice("Producto identificado: " + found.name);
+              return true;
+            }}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

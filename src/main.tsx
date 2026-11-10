@@ -14,6 +14,7 @@ import {
   Barcode,
 } from "lucide-react";
 import "./style.css";
+import tvgLogo from "./assets/logo-tvg.png";
 const BarcodeLabel = lazy(() =>
   import("./BarcodeLabel").then((m) => ({ default: m.BarcodeLabel })),
 );
@@ -279,16 +280,22 @@ function App() {
   return (
     <div className="layout">
       <aside>
-        <a className="brand" href="#">
-          <span>
-            tvg<span className="dot">.</span>
-          </span>
-          <small>CATALOG MANAGER</small>
+        <a
+          className="brand"
+          href="#"
+          aria-label="Te Va a Gustar Lencería — inicio"
+        >
+          <img
+            src={tvgLogo}
+            alt="TVG — Te Va a Gustar Lencería"
+            width={1138}
+            height={648}
+          />
         </a>
         <div className="workspace">
-          <span className="avatar">TV</span>
+          <span className="avatar">TVG</span>
           <div>
-            Mi negocio<small>Espacio de trabajo</small>
+            Te Va a Gustar<small>Lencería · Catálogo</small>
           </div>
         </div>
         <div className="navlabel">PRINCIPAL</div>
@@ -321,7 +328,18 @@ function App() {
           <span>
             Mi negocio <b>/</b> {view === "catalog" ? "Catálogo" : "Resumen"}
           </span>
-          <span className="avatar">TV</span>
+          <a
+            className="header-brand"
+            href="#"
+            aria-label="Te Va a Gustar Lencería — inicio"
+          >
+            <img
+              src={tvgLogo}
+              alt="TVG — Te Va a Gustar Lencería"
+              width={1138}
+              height={648}
+            />
+          </a>
         </header>
         <section>
           <div className="syncbar">

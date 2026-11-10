@@ -812,3 +812,47 @@ textarea:focus-visible {
   color: #24785d;
   border-color: #cfe4d7;
 }
+.brand {
+  display: block;
+  margin: 0;
+  padding: 0 5px;
+}
+.brand img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.header-brand {
+  display: block;
+  flex-shrink: 0;
+}
+.header-brand img {
+  display: block;
+  width: 100px;
+  height: auto;
+  max-height: 65px;
+  object-fit: contain;
+}
+.workspace {
+  margin-top: 24px;
+}
+@media (max-width: 760px) {
+  header {
+    height: 100px;
+    flex-direction: row-reverse;
+    gap: 15px;
+  }
+  header > span {
+    font-size: 10px;
+  }
+  header b {
+    margin: 0 7px;
+  }
+  .header-brand img {
+    width: 145px;
+    max-height: 90px;
+  }
+  .workspace {
+    margin-top: 20px;
+  }
+}

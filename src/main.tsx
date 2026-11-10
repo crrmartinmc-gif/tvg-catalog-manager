@@ -14,6 +14,7 @@ import {
 import "./style.css";
 import { SheetConnection } from "./SheetConnection";
 import {
+  DEFAULT_SHEETS_ENDPOINT,
   sheetsRequest,
   validProducts,
   type Product,
@@ -74,9 +75,9 @@ function App() {
   const [syncError, setSyncError] = useState(false);
   const [endpoint] = useState(() => {
     try {
-      return localStorage.getItem("tvg.sheets.url") || "";
+      return localStorage.getItem("tvg.sheets.url") || DEFAULT_SHEETS_ENDPOINT;
     } catch {
-      return "";
+      return DEFAULT_SHEETS_ENDPOINT;
     }
   });
   async function connect(url: string, password: string) {

@@ -10,6 +10,8 @@ export type Product = {
 };
 export type Connection = { url: string; password: string; version: string };
 export type Snapshot = { products: Product[]; version: string };
+export const DEFAULT_SHEETS_ENDPOINT =
+  "https://script.google.com/macros/s/AKfycbxi6cSpbXtnLBpkPpxtO5S5yxkGKQ7tNNuD5Z9mXTFD-7LRftixceESDq6Bs2R9P7s/exec";
 export const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1JwcHRNFWoUCCq1ywVQQL9_qnZTZtykHDgzio8S9NxKM/edit";
 export function validProducts(data: unknown): data is Product[] {

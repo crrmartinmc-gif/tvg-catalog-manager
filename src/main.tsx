@@ -94,7 +94,7 @@ function App() {
       if (!document.hidden) void refreshRef.current();
     };
     update();
-    const timer = window.setInterval(update, 15000);
+    const timer = window.setInterval(update, 60000);
     window.addEventListener("focus", update);
     document.addEventListener("visibilitychange", update);
     return () => {
@@ -347,7 +347,7 @@ function App() {
               {busy
                 ? "Sincronizando…"
                 : connection
-                  ? "Google Sheets · actualización automática cada 15 segundos"
+                  ? "Google Sheets · actualización automática cada 1 minuto"
                   : "Esperando conexión con Google Sheets"}
             </span>
             <button disabled={busy || !!draft} onClick={() => void refresh()}>

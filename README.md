@@ -35,7 +35,7 @@ El catálogo usa la pestaña TVG_Catalogo de la planilla configurada. Exportá C
 
 ## Google Sheets
 
-El catálogo se guarda en la planilla familiar y se conecta automáticamente, sin contraseña. Consulta actualizaciones cada 15 segundos y al volver a la pestaña; mientras se edita un producto, pausa la consulta para conservar el formulario. Las escrituras requieren conexión a Sheets y se comprueba la versión para evitar sobrescribir cambios de otro dispositivo.
+El catálogo se guarda en la planilla familiar y se conecta automáticamente, sin contraseña. Consulta actualizaciones cada 1 minuto y al volver a la pestaña; mientras se edita un producto, pausa la consulta para conservar el formulario. Las escrituras requieren conexión a Sheets y se comprueba la versión para evitar sobrescribir cambios de otro dispositivo.
 
 El propietario debe [actualizar la implementación de Apps Script](integrations/google-sheets/README.md) una vez para habilitar el acceso sin clave. Cualquier persona con acceso a la app puede leer o modificar el catálogo.
 
@@ -55,3 +55,11 @@ Prueba de navegador del circuito de etiquetas y búsqueda: con Vite iniciado en 
 ### Productos que ya tienen código de barras
 
 Dentro de Nuevo producto o Editar producto, **Escanear código de barras** permite leer la etiqueta original y copiar el valor al SKU sin guardar todavía. Luego se completa manualmente la descripción y los demás campos. Conserva los datos ya ingresados y los ceros iniciales; rechaza un código asignado a otro producto. Al cerrar el escáner sin elegir un código se conserva el SKU anterior. Se puede usar la cámara o ingresar el código manualmente. No requiere cambios en Apps Script.
+
+## Instalar en el celular
+
+Android/Chrome: menú → Instalar aplicación o Agregar a pantalla de inicio. iPhone/Safari: Compartir → Agregar a pantalla de inicio. Se usa el ícono TVG y la aplicación se abre sin la barra habitual del navegador cuando el navegador permite instalación independiente. Si ya existía un acceso con el ícono anterior, puede ser necesario quitar ese acceso y agregarlo nuevamente.
+
+El catálogo consulta Sheets cada 1 minuto mientras la pestaña está visible y también al volver a la app. Las escrituras siguen siendo inmediatas al guardar. Requiere conexión a Internet; no guarda cambios pendientes sin conexión.
+
+Con Vite iniciado, `npm run test:install` verifica el intervalo de 60 segundos, el manifiesto, el ícono y los criterios de instalación de Chromium.

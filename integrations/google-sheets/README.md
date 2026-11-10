@@ -1,6 +1,6 @@
 # Catálogo familiar con Google Sheets, sin contraseña
 
-La app se conecta automáticamente al abrirse, guarda cada cambio en Sheets y consulta actualizaciones cada 15 segundos y al volver a la pestaña. No pide clave ni configuración en los dispositivos.
+La app se conecta automáticamente al abrirse, guarda cada cambio en Sheets y consulta actualizaciones cada 1 minuto y al volver a la pestaña. No pide clave ni configuración en los dispositivos.
 
 ## Actualizar el script existente (una vez)
 
@@ -22,7 +22,7 @@ El acceso sin clave fue solicitado por el propietario para uso familiar. Cualqui
 - Si una escritura no se puede confirmar, se bloquea la edición hasta una lectura exitosa del catálogo. No se reenvían escrituras automáticamente para evitar duplicados.
 - Las primeras columnas son ID, Nombre, SKU, Categoria, Precio ARS, Stock y Activo. Las imágenes se fragmentan en las columnas siguientes. Conservá encabezados e ID. Precio debe ser número, Stock un entero y Activo un booleano (TRUE/FALSE).
 - Las ediciones manuales concurrentes en la planilla no quedan protegidas por el bloqueo de Apps Script. Preferí editar desde la app.
-- Límites: 2000 productos, 2 MB por imagen, 8 MB por solicitud. Cada dispositivo visible consulta cada 15 segundos, sujeto a cuotas de Google Apps Script. La consulta se pausa con la pestaña oculta.
+- Límites: 2000 productos, 2 MB por imagen, 8 MB por solicitud. Cada dispositivo visible consulta cada 1 minuto, sujeto a cuotas de Google Apps Script. La consulta se pausa con la pestaña oculta.
 
 ## Validación
 

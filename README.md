@@ -32,3 +32,9 @@ La compilación ejecuta la comprobación de TypeScript y genera `dist/`. GitHub 
 - Diseño adaptable a celulares y computadoras.
 
 El catálogo comienza vacío. Los datos se guardan en este navegador y dispositivo; no hay sincronización ni respaldo remoto. Exportá CSV periódicamente (no incluye las imágenes). No requiere credenciales ni conexiones a Mercado Libre. Para multiusuario hace falta incorporar backend, almacenamiento y autenticación.
+
+## Google Sheets
+
+La app incluye una conexión opcional a la planilla del negocio mediante Apps Script. Requiere autorización y despliegue por el propietario de la cuenta. Consultá [la guía de activación](integrations/google-sheets/README.md). Sin conectar continúa en modo local.
+
+Pruebas del backend de integración con servicios de Google simulados: `npm test`. No reemplazan la validación contra la implementación real de Google.

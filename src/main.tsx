@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Package,
@@ -12,23 +12,13 @@ import {
   Boxes,
 } from "lucide-react";
 import "./style.css";
-import { SheetConnection } from "./SheetConnection";
 import {
   DEFAULT_SHEETS_ENDPOINT,
   sheetsRequest,
-  validProducts,
   type Product,
   type Connection,
 } from "./sheets";
 
-const KEY = "tvg.catalog.v1";
-function read(): Product[] {
-  const raw = localStorage.getItem(KEY);
-  if (!raw) return [];
-  const data: unknown = JSON.parse(raw);
-  if (!validProducts(data)) throw Error("Datos inválidos");
-  return data;
-}
 const empty = (): Product => ({
   id: crypto.randomUUID(),
   name: "",
@@ -47,21 +37,7 @@ const money = (n: number) =>
   }).format(n);
 function App() {
   const [error, setError] = useState("");
-  const [products, setProducts] = useState<Product[]>(() => {
-    try {
-      return read();
-    } catch {
-      return [];
-    }
-  });
-  const [storageBroken] = useState(() => {
-    try {
-      read();
-      return false;
-    } catch {
-      return true;
-    }
-  });
+  const [products, setProducts] = useState<Product[]>([]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
@@ -71,71 +47,59 @@ function App() {
   const [upload, setUpload] = useState(false);
   const [connection, setConnection] = useState<Connection | null>(null);
   const [busy, setBusy] = useState(false);
-  const [settings, setSettings] = useState(false);
   const [syncError, setSyncError] = useState(false);
-  const [endpoint] = useState(() => {
-    try {
-      return localStorage.getItem("tvg.sheets.url") || DEFAULT_SHEETS_ENDPOINT;
-    } catch {
-      return DEFAULT_SHEETS_ENDPOINT;
-    }
-  });
-  async function connect(url: string, password: string) {
-    setBusy(true);
-    try {
-      const data = await sheetsRequest({ url, password }, "read");
-      setConnection({ url, password, version: data.version });
-      setProducts(data.products);
-      setSyncError(false);
-      setError("");
-      setSettings(false);
-      setNotice("Conectado. Se cargó el catálogo de Google Sheets.");
-      try {
-        localStorage.setItem("tvg.sheets.url", url);
-      } catch {
-        /* Connection still works without local preferences. */
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
+  const pending = useRef(false);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const refreshRef = useRef<() => Promise<void>>(async () => {});
   async function refresh() {
-    if (!connection || busy) return;
+    if (pending.current || draftRef.current) return;
+    pending.current = true;
     setBusy(true);
     try {
-      const data = await sheetsRequest(connection, "read");
+      const data = await sheetsRequest(
+        { url: DEFAULT_SHEETS_ENDPOINT },
+        "read",
+      );
       setProducts(data.products);
-      setConnection({ ...connection, version: data.version });
+      setConnection({ url: DEFAULT_SHEETS_ENDPOINT, version: data.version });
       setSyncError(false);
       setError("");
-      setNotice("Catálogo actualizado desde Google Sheets.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo actualizar.");
     } finally {
+      pending.current = false;
       setBusy(false);
     }
   }
+  refreshRef.current = refresh;
+  useEffect(() => {
+    const update = () => {
+      if (!document.hidden) void refreshRef.current();
+    };
+    update();
+    const timer = window.setInterval(update, 15000);
+    window.addEventListener("focus", update);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", update);
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, []);
   async function persist(next: Product[]) {
-    if (busy || syncError) return false;
+    if (pending.current || busy || syncError || !connection) return false;
+    pending.current = true;
     setBusy(true);
     try {
-      if (connection) {
-        const data = await sheetsRequest(
-          connection,
-          "write",
-          connection.version,
-          next,
-        );
-        setProducts(data.products);
-        setConnection({ ...connection, version: data.version });
-      } else {
-        if (storageBroken)
-          throw Error(
-            "El almacenamiento contiene datos que no se pudieron leer. Respaldalos antes de restablecerlo.",
-          );
-        localStorage.setItem(KEY, JSON.stringify(next));
-        setProducts(next);
-      }
+      const data = await sheetsRequest(
+        connection,
+        "write",
+        connection.version,
+        next,
+      );
+      setProducts(data.products);
+      setConnection({ ...connection, version: data.version });
       setError("");
       return true;
     } catch (e) {
@@ -147,6 +111,7 @@ function App() {
       );
       return false;
     } finally {
+      pending.current = false;
       setBusy(false);
     }
   }
@@ -300,11 +265,9 @@ function App() {
           <i />{" "}
           {connection
             ? "Conectado a Google Sheets"
-            : "Guardado en este dispositivo"}
+            : "Conectando a Google Sheets"}
           <small>
-            {connection
-              ? "Catálogo compartido"
-              : "Tus productos, siempre a mano."}
+            {connection ? "Catálogo compartido" : "Sincronización automática"}
           </small>
         </div>
       </aside>
@@ -318,24 +281,15 @@ function App() {
         <section>
           <div className="syncbar">
             <span>
-              {connection ? "Google Sheets conectado" : "Catálogo local"}
+              {busy
+                ? "Sincronizando…"
+                : connection
+                  ? "Google Sheets · actualización automática cada 15 segundos"
+                  : "Esperando conexión con Google Sheets"}
             </span>
-            <div>
-              {connection && (
-                <button
-                  disabled={busy || !!draft}
-                  onClick={() => void refresh()}
-                >
-                  {busy ? "Sincronizando…" : "Actualizar desde Sheets"}
-                </button>
-              )}
-              <button
-                disabled={busy || !!draft}
-                onClick={() => setSettings(true)}
-              >
-                {connection ? "Configurar conexión" : "Conectar Google Sheets"}
-              </button>
-            </div>
+            <button disabled={busy || !!draft} onClick={() => void refresh()}>
+              Actualizar ahora
+            </button>
           </div>
           {syncError && (
             <div className="error" role="alert">
@@ -355,7 +309,7 @@ function App() {
             </div>
             <button
               className="primary"
-              disabled={busy || syncError}
+              disabled={busy || syncError || !connection}
               onClick={() => {
                 setError("");
                 setDraft(empty());
@@ -365,13 +319,6 @@ function App() {
               Nuevo producto
             </button>
           </div>
-          {storageBroken && (
-            <div role="alert" className="error">
-              No se pudieron leer los datos guardados. Se conservaron sin
-              cambios. Revisá el almacenamiento del navegador antes de
-              continuar.
-            </div>
-          )}
           {error && (
             <div role="alert" className="error">
               {error}
@@ -517,7 +464,7 @@ function App() {
                           <div className="actions">
                             <button
                               aria-label={"Editar " + p.name}
-                              disabled={busy || syncError}
+                              disabled={busy || syncError || !connection}
                               onClick={() => {
                                 setError("");
                                 setDraft({ ...p });
@@ -527,7 +474,7 @@ function App() {
                             </button>
                             <button
                               aria-label={"Eliminar " + p.name}
-                              disabled={busy || syncError}
+                              disabled={busy || syncError || !connection}
                               onClick={() => void remove(p)}
                             >
                               <Trash2 size={16} />
@@ -555,6 +502,7 @@ function App() {
                     : "Agregá tu primer producto y empezá a organizar tu negocio."}
                 </p>
                 <button
+                  disabled={busy || syncError || !connection}
                   onClick={() => {
                     if (products.length) {
                       setQuery("");
@@ -572,9 +520,7 @@ function App() {
             <footer>
               {filtered.length} de {products.length} productos{" "}
               <span>
-                {connection
-                  ? "Datos en Google Sheets"
-                  : "Datos almacenados localmente"}
+                {connection ? "Datos en Google Sheets" : "Esperando conexión"}
               </span>
             </footer>
           </div>
@@ -724,7 +670,7 @@ function App() {
               </button>
               <button
                 className="primary"
-                disabled={upload || busy || syncError}
+                disabled={upload || busy || syncError || !connection}
                 type="submit"
               >
                 {busy
@@ -736,15 +682,6 @@ function App() {
             </div>
           </form>
         </div>
-      )}
-      {settings && (
-        <SheetConnection
-          busy={busy}
-          connected={!!connection}
-          initialUrl={connection?.url || endpoint}
-          onConnect={connect}
-          onClose={() => setSettings(false)}
-        />
       )}
     </div>
   );

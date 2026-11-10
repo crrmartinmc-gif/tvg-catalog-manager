@@ -28,13 +28,15 @@ La compilación ejecuta la comprobación de TypeScript y genera `dist/`. GitHub 
 - Búsqueda por nombre o SKU, filtros por categoría, estado y stock bajo.
 - Resumen de productos activos, stock bajo y valor del inventario.
 - Exportación CSV de los productos filtrados, compatible con Excel y con protección contra fórmulas.
-- Guardado local persistente en el navegador, con aviso si falla el almacenamiento.
+- Guardado compartido en Google Sheets con actualización automática.
 - Diseño adaptable a celulares y computadoras.
 
-El catálogo comienza vacío. Los datos se guardan en este navegador y dispositivo; no hay sincronización ni respaldo remoto. Exportá CSV periódicamente (no incluye las imágenes). No requiere credenciales ni conexiones a Mercado Libre. Para multiusuario hace falta incorporar backend, almacenamiento y autenticación.
+El catálogo usa la pestaña TVG_Catalogo de la planilla configurada. Exportá CSV periódicamente (no incluye las imágenes). No requiere claves ni conexiones a Mercado Libre.
 
 ## Google Sheets
 
-La app incluye una conexión opcional a la planilla del negocio mediante Apps Script. Requiere autorización y despliegue por el propietario de la cuenta. Consultá [la guía de activación](integrations/google-sheets/README.md). Sin conectar continúa en modo local.
+El catálogo se guarda en la planilla familiar y se conecta automáticamente, sin contraseña. Consulta actualizaciones cada 15 segundos y al volver a la pestaña; mientras se edita un producto, pausa la consulta para conservar el formulario. Las escrituras requieren conexión a Sheets y se comprueba la versión para evitar sobrescribir cambios de otro dispositivo.
 
-Pruebas del backend de integración con servicios de Google simulados: `npm test`. No reemplazan la validación contra la implementación real de Google.
+El propietario debe [actualizar la implementación de Apps Script](integrations/google-sheets/README.md) una vez para habilitar el acceso sin clave. Cualquier persona con acceso a la app puede leer o modificar el catálogo.
+
+Pruebas del backend con servicios Google simulados: `npm test`. No reemplazan la comprobación contra la implementación real de Google.

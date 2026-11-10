@@ -8,7 +8,7 @@ export type Product = {
   active: boolean;
   image: string;
 };
-export type Connection = { url: string; password: string; version: string };
+export type Connection = { url: string; version: string };
 export type Snapshot = { products: Product[]; version: string };
 export const DEFAULT_SHEETS_ENDPOINT =
   "https://script.google.com/macros/s/AKfycbxi6cSpbXtnLBpkPpxtO5S5yxkGKQ7tNNuD5Z9mXTFD-7LRftixceESDq6Bs2R9P7s/exec";
@@ -36,7 +36,7 @@ export function validProducts(data: unknown): data is Product[] {
   );
 }
 export async function sheetsRequest(
-  connection: Pick<Connection, "url" | "password">,
+  connection: Pick<Connection, "url">,
   action: "read" | "write",
   version?: string,
   products?: Product[],
@@ -59,7 +59,6 @@ export async function sheetsRequest(
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
         action,
-        password: connection.password,
         version,
         products,
       }),
@@ -76,7 +75,16 @@ export async function sheetsRequest(
         "La implementación no devuelve JSON. Revisá que permita acceso a cualquier persona y usá la URL /exec.",
       );
     }
-    if (!data.ok) throw Error(data.error || "No se pudo sincronizar.");
+    if (!data.ok) {
+      if (
+        typeof data.error === "string" &&
+        /CATALOG_PASSWORD|Clave del catálogo/.test(data.error)
+      )
+        throw Error(
+          "Falta actualizar la implementación de Apps Script a la versión sin contraseña. Abrí la guía de Google Sheets del repositorio para completar ese paso.",
+        );
+      throw Error(data.error || "No se pudo sincronizar.");
+    }
     if (!validProducts(data.products) || typeof data.version !== "string")
       throw Error("Google Sheets devolvió datos inválidos.");
     return { products: data.products, version: data.version };

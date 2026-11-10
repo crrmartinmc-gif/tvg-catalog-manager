@@ -1,7 +1,4 @@
-/* TVG Catalog Manager — deploy as an Apps Script web app.
- * Script property CATALOG_PASSWORD must contain a private key of >=16 characters.
- * Never put the key in this file or in the GitHub repository.
- */
+/* Catálogo familiar compartido, sin contraseña. Cualquier persona con acceso a la app puede leer y modificar productos. */
 const TVG_SPREADSHEET_ID = "1JwcHRNFWoUCCq1ywVQQL9_qnZTZtykHDgzio8S9NxKM";
 const TVG_TAB = "TVG_Catalogo";
 const TVG_HEADERS = [
@@ -26,18 +23,6 @@ function doPost(e) {
     if (!text || text.length > 8 * 1024 * 1024)
       throw new Error("Solicitud vacía o demasiado grande (máximo 8 MB).");
     const body = JSON.parse(text);
-    const expected =
-      PropertiesService.getScriptProperties().getProperty("CATALOG_PASSWORD");
-    if (!expected || expected.length < 16)
-      throw new Error(
-        "Falta configurar CATALOG_PASSWORD en Apps Script (mínimo 16 caracteres).",
-      );
-    if (
-      typeof body.password !== "string" ||
-      body.password.length > 1024 ||
-      !tvgEqual(body.password, expected)
-    )
-      throw new Error("Clave del catálogo incorrecta.");
     if (body.action !== "read" && body.action !== "write")
       throw new Error("Operación inválida.");
     lock = LockService.getScriptLock();
@@ -92,13 +77,6 @@ function tvgVersion(products) {
       JSON.stringify(products),
     ),
   );
-}
-function tvgEqual(a, b) {
-  const x = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, a);
-  const y = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, b);
-  let diff = 0;
-  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
-  return diff === 0;
 }
 function tvgValidate(products) {
   if (!Array.isArray(products) || products.length > 2000)

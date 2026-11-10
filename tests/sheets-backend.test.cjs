@@ -43,11 +43,6 @@ function setup() {
   };
   let created = false;
   const context = {
-    PropertiesService: {
-      getScriptProperties: () => ({
-        getProperty: () => "private-test-password-12345",
-      }),
-    },
     LockService: {
       getScriptLock: () => ({
         tryLock: () => true,
@@ -92,7 +87,6 @@ function setup() {
         context.doPost({
           postData: {
             contents: JSON.stringify({
-              password: "private-test-password-12345",
               ...body,
             }),
           },
@@ -110,10 +104,15 @@ const product = {
   active: true,
   image: "data:image/png;base64," + "A".repeat(90000),
 };
-test("password required before spreadsheet creation", () => {
+test("read and write without a password", () => {
   const s = setup();
-  assert.equal(s.request({ action: "read", password: "wrong" }).ok, false);
-  assert.equal(s.sheet.values.length, 0);
+  const first = s.request({ action: "read" });
+  assert.equal(first.ok, true);
+  assert.equal(
+    s.request({ action: "write", version: first.version, products: [product] })
+      .ok,
+    true,
+  );
 });
 test("round trip, image chunks, leading formulas, conflicts and deletion", () => {
   const s = setup();

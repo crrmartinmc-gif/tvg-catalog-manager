@@ -48,7 +48,12 @@ function doPost(e) {
       products = tvgRead(sheet);
       version = tvgVersion(products);
     }
-    return tvgJson({ ok: true, products: products, version: version });
+    return tvgJson({
+      ok: true,
+      products: products,
+      version: version,
+      schema: 2,
+    });
   } catch (error) {
     const known = error && error.message;
     // Do not expose Google account or authorization details to unauthenticated clients.
@@ -112,6 +117,16 @@ function tvgValidate(products) {
         "Producto inválido. Revisá nombre, SKU, categoría, precio, stock e imagen.",
       );
     }
+    ["description", "color", "size", "productType"].forEach(function (key) {
+      if (
+        p[key] !== undefined &&
+        (typeof p[key] !== "string" ||
+          p[key].length > (key === "description" ? 2000 : 80))
+      )
+        throw new Error(
+          "Producto inválido: revisá descripción, color, talle y tipo.",
+        );
+    });
     const sku = p.sku.trim().toLowerCase();
     if (ids.has(p.id) || skus.has(sku))
       throw new Error("Hay productos con ID o SKU duplicado.");
@@ -147,7 +162,15 @@ function tvgRead(sheet) {
         price: row[4],
         stock: row[5],
         active: row[6],
-        image: row.slice(7).join(""),
+        image: row
+          .filter(function (_, i) {
+            return /^Imagen \d+$/.test(String(values[0][i]));
+          })
+          .join(""),
+        description: String(row[values[0].indexOf("Descripcion")] || ""),
+        color: String(row[values[0].indexOf("Color")] || ""),
+        size: String(row[values[0].indexOf("Talle")] || ""),
+        productType: String(row[values[0].indexOf("Tipo")] || ""),
       };
     });
   tvgValidate(products);
@@ -158,8 +181,20 @@ function tvgText(value) {
   return /^[=+@\-\t\r']/.test(value) ? "'" + value : value;
 }
 function tvgWrite(sheet, products) {
+  const imageCount = Math.max(
+    1,
+    ...products.map(function (p) {
+      return Math.ceil(p.image.length / 40000);
+    }),
+  );
+  const columns = Math.max(7 + imageCount + 4, sheet.getLastColumn());
+  const imageColumns = columns - 11;
+  const headers = TVG_HEADERS.slice(0, 7);
+  for (let i = 1; i <= imageColumns; i++) headers.push("Imagen " + i);
+  headers.push("Descripcion", "Color", "Talle", "Tipo");
   const rows = products.map(function (p) {
     const chunks = p.image.match(/.{1,40000}/g) || [""];
+    while (chunks.length < imageColumns) chunks.push("");
     return [
       tvgText(p.id),
       tvgText(p.name),
@@ -168,19 +203,14 @@ function tvgWrite(sheet, products) {
       p.price,
       p.stock,
       p.active,
-    ].concat(chunks);
+    ].concat(chunks, [
+      tvgText(p.description || ""),
+      tvgText(p.color || ""),
+      tvgText(p.size || ""),
+      tvgText(p.productType || ""),
+    ]);
   });
-  const columns = Math.max(
-    TVG_HEADERS.length,
-    sheet.getLastColumn(),
-    rows.reduce(function (n, row) {
-      return Math.max(n, row.length);
-    }, 0),
-  );
   const rowCount = Math.max(rows.length + 1, sheet.getLastRow());
-  const headers = TVG_HEADERS.slice();
-  while (headers.length < columns)
-    headers.push("Imagen " + (headers.length - 6));
   const data = [headers].concat(rows);
   while (data.length < rowCount) data.push([]);
   data.forEach(function (row) {

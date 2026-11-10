@@ -24,6 +24,10 @@ const empty = (): Product => ({
   name: "",
   sku: "",
   category: "General",
+  description: "",
+  color: "",
+  size: "",
+  productType: "",
   price: 0,
   stock: 0,
   active: true,
@@ -154,6 +158,10 @@ function App() {
       name: draft.name.trim(),
       sku: draft.sku.trim(),
       category: draft.category.trim(),
+      description: (draft.description || " ").trim(),
+      color: (draft.color || " ").trim(),
+      size: (draft.size || " ").trim(),
+      productType: (draft.productType || " ").trim(),
     };
     if (
       await persist(
@@ -192,7 +200,10 @@ function App() {
   }
   const filtered = products.filter(
     (p) =>
-      (p.name + " " + p.sku).toLowerCase().includes(query.toLowerCase()) &&
+      [p.name, p.sku, p.description, p.color, p.size, p.productType]
+        .join(" ")
+        .toLowerCase()
+        .includes(query.toLowerCase()) &&
       (!category || p.category === category) &&
       (!status ||
         (status === "active"
@@ -209,11 +220,26 @@ function App() {
         .replace(/"/g, '""') +
       '"';
     const data = [
-      ["Nombre", "SKU", "Categoría", "Precio ARS", "Stock", "Estado"],
+      [
+        "Nombre",
+        "SKU",
+        "Categoría",
+        "Descripción",
+        "Color",
+        "Talle",
+        "Tipo",
+        "Precio ARS",
+        "Stock",
+        "Estado",
+      ],
       ...filtered.map((p) => [
         p.name,
         p.sku,
         p.category,
+        p.description || "",
+        p.color || "",
+        p.size || "",
+        p.productType || "",
         p.price,
         p.stock,
         p.active ? "Activo" : "Inactivo",
@@ -385,7 +411,7 @@ function App() {
                 <Search size={18} />
                 <input
                   aria-label="Buscar productos"
-                  placeholder="Buscar por nombre o SKU…"
+                  placeholder="Buscar por nombre, SKU, color, talle o tipo…"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
@@ -441,6 +467,22 @@ function App() {
                             <div>
                               <b>{p.name}</b>
                               <small>{p.sku}</small>
+                              {(p.color || p.size || p.productType) && (
+                                <small className="attributes">
+                                  {[
+                                    p.productType,
+                                    p.color,
+                                    p.size && `Talle ${p.size}`,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </small>
+                              )}
+                              {p.description && (
+                                <small className="description">
+                                  {p.description}
+                                </small>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -600,6 +642,52 @@ function App() {
                 />
               </label>
             </div>
+            <label>
+              Descripción
+              <textarea
+                aria-label="Descripción"
+                maxLength={2000}
+                rows={3}
+                placeholder="Material, características, cuidados y otros detalles…"
+                value={draft.description || ""}
+                onChange={(e) =>
+                  setDraft({ ...draft, description: e.target.value })
+                }
+              />
+            </label>
+            <div className="formrow">
+              <label>
+                Color
+                <input
+                  maxLength={80}
+                  placeholder="Ej.: Negro, blanco, estampado"
+                  value={draft.color || ""}
+                  onChange={(e) =>
+                    setDraft({ ...draft, color: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                Talle / medida
+                <input
+                  maxLength={80}
+                  placeholder="Ej.: M, 42, 20 × 30 cm"
+                  value={draft.size || ""}
+                  onChange={(e) => setDraft({ ...draft, size: e.target.value })}
+                />
+              </label>
+            </div>
+            <label>
+              Tipo de producto
+              <input
+                maxLength={80}
+                placeholder="Ej.: Remera, pantalón, accesorio"
+                value={draft.productType || ""}
+                onChange={(e) =>
+                  setDraft({ ...draft, productType: e.target.value })
+                }
+              />
+            </label>
             <div className="formrow">
               <label>
                 Precio (ARS)

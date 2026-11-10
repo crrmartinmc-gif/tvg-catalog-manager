@@ -27,3 +27,7 @@ El acceso sin clave fue solicitado por el propietario para uso familiar. Cualqui
 ## Validación
 
 `npm test` comprueba el backend con servicios Google simulados. Las pruebas de navegador comprueban conexión automática, ausencia de clave, lectura periódica, guardado y protección del formulario. El entorno no tiene acceso a Google para editar o desplegar el script: el propietario debe actualizar la implementación anterior antes de que la conexión sin clave funcione.
+
+## Descripción, color, talle y tipo
+
+Actualizá Código.gs y desplegá una nueva versión de la misma implementación para habilitar estos campos. El script lee las filas anteriores sin modificar sus imágenes y agrega Descripcion, Color, Talle y Tipo al siguiente guardado. No agregues ni desplaces columnas manualmente. Los cuatro campos son opcionales: descripción admite 2000 caracteres y los demás 80. La app requiere la versión de esquema 2 para evitar que una implementación anterior descarte los campos nuevos.

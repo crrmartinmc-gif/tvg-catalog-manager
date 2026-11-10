@@ -3,6 +3,10 @@ export type Product = {
   name: string;
   sku: string;
   category: string;
+  description?: string;
+  color?: string;
+  size?: string;
+  productType?: string;
   price: number;
   stock: number;
   active: boolean;
@@ -24,6 +28,12 @@ export function validProducts(data: unknown): data is Product[] {
         typeof p.name === "string" &&
         typeof p.sku === "string" &&
         typeof p.category === "string" &&
+        ["description", "color", "size", "productType"].every(
+          (key) =>
+            p[key] === undefined ||
+            (typeof p[key] === "string" &&
+              p[key].length <= (key === "description" ? 2000 : 80)),
+        ) &&
         Number.isFinite(p.price) &&
         p.price >= 0 &&
         Number.isInteger(p.stock) &&
@@ -85,6 +95,10 @@ export async function sheetsRequest(
         );
       throw Error(data.error || "No se pudo sincronizar.");
     }
+    if (data.schema !== 2)
+      throw Error(
+        "Actualizá el Código.gs y su implementación a la versión con descripción, color, talle y tipo antes de continuar.",
+      );
     if (!validProducts(data.products) || typeof data.version !== "string")
       throw Error("Google Sheets devolvió datos inválidos.");
     return { products: data.products, version: data.version };

@@ -23,9 +23,9 @@ La compilación ejecuta la comprobación de TypeScript y genera `dist/`. GitHub 
 ## Funciones
 
 - Alta, edición y eliminación con confirmación.
-- SKU único, categorías, precios en ARS y stock entero no negativo.
+- SKU único, categorías, descripción, color, talle/medida, tipo, precios en ARS y stock entero no negativo.
 - Imágenes JPG, PNG y WebP de hasta 2 MB desde el dispositivo.
-- Búsqueda por nombre o SKU, filtros por categoría, estado y stock bajo.
+- Búsqueda por nombre, SKU, descripción, color, talle o tipo; filtros por categoría, estado y stock bajo.
 - Resumen de productos activos, stock bajo y valor del inventario.
 - Exportación CSV de los productos filtrados, compatible con Excel y con protección contra fórmulas.
 - Guardado compartido en Google Sheets con actualización automática.

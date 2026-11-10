@@ -648,3 +648,29 @@ a {
     justify-content: flex-end;
   }
 }
+textarea {
+  font: inherit;
+  resize: vertical;
+  width: 100%;
+  display: block;
+  border: 1px solid #dce5df;
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 7px;
+  font-size: 13px;
+}
+textarea:focus-visible {
+  outline: 3px solid #a7d6c8;
+  outline-offset: 2px;
+}
+.product .description {
+  white-space: normal;
+  max-width: 300px;
+  line-height: 1.5;
+}
+.product .attributes {
+  color: #3f8065;
+  white-space: normal;
+  max-width: 300px;
+  line-height: 1.5;
+}

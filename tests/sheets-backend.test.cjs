@@ -99,6 +99,10 @@ const product = {
   name: "=SUM(1,2)",
   sku: "001",
   category: "General",
+  description: "Algodón, manga corta\nLavado suave",
+  color: "Negro",
+  size: "M",
+  productType: "Remera",
   price: 123.45,
   stock: 4,
   active: true,
@@ -183,4 +187,59 @@ test("preserve a tab with an incompatible header", () => {
   const original = JSON.stringify(s.sheet.values);
   assert.equal(s.request({ action: "read" }).ok, false);
   assert.equal(JSON.stringify(s.sheet.values), original);
+});
+
+test("migrate legacy rows without losing image, price or stock", () => {
+  const s = setup();
+  s.request({ action: "read" });
+  s.sheet.values.push([
+    "legacy",
+    "Anterior",
+    "OLD-1",
+    "General",
+    20,
+    3,
+    true,
+    "data:image/png;base64,AAAA",
+  ]);
+  const old = s.request({ action: "read" });
+  assert.equal(old.ok, true);
+  assert.equal(old.schema, 2);
+  assert.equal(old.products[0].color, "");
+  assert.equal(old.products[0].description, "");
+  const updated = {
+    ...old.products[0],
+    color: "Azul",
+    size: "42",
+    description: "Nueva descripción",
+    productType: "Pantalón",
+  };
+  const saved = s.request({
+    action: "write",
+    version: old.version,
+    products: [updated],
+  });
+  assert.deepEqual(saved.products, [updated]);
+  assert.equal(saved.products[0].image, "data:image/png;base64,AAAA");
+  assert.ok(s.sheet.values[0].includes("Descripcion"));
+  assert.ok(s.sheet.values[0].includes("Color"));
+});
+test("reject oversized or non-text attributes without altering data", () => {
+  const s = setup();
+  const { version } = s.request({ action: "read" });
+  for (const attrs of [
+    { color: 12 },
+    { description: "x".repeat(2001) },
+    { size: "x".repeat(81) },
+  ]) {
+    assert.equal(
+      s.request({
+        action: "write",
+        version,
+        products: [{ ...product, ...attrs }],
+      }).ok,
+      false,
+    );
+  }
+  assert.deepEqual(s.request({ action: "read" }).products, []);
 });

@@ -51,3 +51,7 @@ Pruebas del backend con servicios Google simulados: `npm test`. No reemplazan la
 - No hace falta actualizar Apps Script para esta función: utiliza el SKU existente.
 
 Prueba de navegador del circuito de etiquetas y búsqueda: con Vite iniciado en el puerto 5173, ejecutá `npm run test:browser`. Usa Chromium del sistema o el instalado por Playwright (`npx playwright install chromium`); admite `CHROMIUM_PATH`. Simula la API de Sheets, comprueba lectura real del Code128 generado y no modifica la planilla. La cámara se validó además con una fuente de video simulada; el permiso y enfoque deben comprobarse en el celular real.
+
+### Productos que ya tienen código de barras
+
+Dentro de Nuevo producto o Editar producto, **Escanear código de barras** permite leer la etiqueta original y copiar el valor al SKU sin guardar todavía. Luego se completa manualmente la descripción y los demás campos. Conserva los datos ya ingresados y los ceros iniciales; rechaza un código asignado a otro producto. Al cerrar el escáner sin elegir un código se conserva el SKU anterior. Se puede usar la cámara o ingresar el código manualmente. No requiere cambios en Apps Script.

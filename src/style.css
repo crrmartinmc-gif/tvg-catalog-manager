@@ -807,3 +807,8 @@ textarea:focus-visible {
     max-height: none;
   }
 }
+.capture-barcode {
+  margin: 0 0 15px;
+  color: #24785d;
+  border-color: #cfe4d7;
+}

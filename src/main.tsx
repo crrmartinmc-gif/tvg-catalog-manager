@@ -54,7 +54,7 @@ function App() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState<false | "lookup" | "capture">(false);
   const [label, setLabel] = useState<Product | null>(null);
   const [draft, setDraft] = useState<Product | null>(null);
   const [view, setView] = useState("catalog");
@@ -65,7 +65,7 @@ function App() {
   const [syncError, setSyncError] = useState(false);
   const pending = useRef(false);
   const interactionOpen = useRef(false);
-  interactionOpen.current = !!draft || scanning || !!label;
+  interactionOpen.current = !!draft || !!scanning || !!label;
   const refreshRef = useRef<() => Promise<void>>(async () => {});
   async function refresh() {
     if (pending.current || interactionOpen.current) return;
@@ -355,7 +355,7 @@ function App() {
             <div className="heading-actions">
               <button
                 disabled={!connection || busy || syncError}
-                onClick={() => setScanning(true)}
+                onClick={() => setScanning("lookup")}
               >
                 <ScanLine size={18} />
                 Escanear producto
@@ -608,6 +608,7 @@ function App() {
       {draft && (
         <div
           className="overlay"
+          style={scanning === "capture" ? { display: "none" } : undefined}
           onClick={(e) => {
             if (e.target === e.currentTarget && !busy) {
               setDraft(null);
@@ -655,10 +656,19 @@ function App() {
               />
             </label>
             <p className="sku-help">
-              El SKU se genera automáticamente. Podés personalizarlo con letras
-              sin acentos, números o guiones. Su código de barras aparece al
-              guardar.
+              El SKU se genera automáticamente. Si el producto ya tiene un
+              código de barras, escanealo para usarlo como SKU. También podés
+              personalizarlo.
             </p>
+            <button
+              type="button"
+              className="capture-barcode"
+              disabled={busy || upload}
+              onClick={() => setScanning("capture")}
+            >
+              <ScanLine size={17} />
+              Escanear código de barras
+            </button>
             <div className="formrow">
               <label>
                 SKU
@@ -824,8 +834,31 @@ function App() {
         )}
         {scanning && (
           <ScanProduct
+            mode={scanning === "capture" ? "capture" : "lookup"}
             onClose={() => setScanning(false)}
             onFind={(code) => {
+              if (scanning === "capture") {
+                if (!draft) return "Abrí primero el formulario de producto.";
+                if (code.length > 60 || !/^[\x20-\x7e]+$/.test(code))
+                  return "El código debe tener hasta 60 caracteres: letras sin acentos, números o símbolos simples.";
+                if (
+                  products.some(
+                    (p) =>
+                      p.id !== draft.id &&
+                      p.sku.toLowerCase() === code.toLowerCase(),
+                  )
+                )
+                  return "Ese código ya está asignado a otro producto. Cada producto debe tener un SKU diferente.";
+                setDraft((current) =>
+                  current ? { ...current, sku: code } : current,
+                );
+                setScanning(false);
+                setError("");
+                setNotice(
+                  "Código copiado al SKU. Completá los datos y guardá el producto.",
+                );
+                return true;
+              }
               const found = products.find(
                 (p) => p.sku.toLowerCase() === code.toLowerCase(),
               );

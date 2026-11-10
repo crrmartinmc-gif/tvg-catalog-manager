@@ -103,10 +103,79 @@ const fs = require("node:fs");
       await page.getByLabel("Nombre", { exact: true }).inputValue(),
       "Producto con etiqueta",
     );
+    await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Nuevo producto", exact: true })
+      .click();
+    await page
+      .getByLabel("Nombre", { exact: true })
+      .fill("Producto con código de fábrica");
+    await page
+      .getByLabel("Descripción", { exact: true })
+      .fill("Datos que no se deben perder");
+    await page.getByLabel("Color", { exact: true }).fill("Azul");
+    const suggested = await page
+      .getByLabel("SKU", { exact: true })
+      .inputValue();
+    await page
+      .getByRole("button", { name: "Escanear código de barras", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Cerrar escáner" }).click();
+    assert.equal(
+      await page.getByLabel("SKU", { exact: true }).inputValue(),
+      suggested,
+    );
+    assert.equal(
+      await page.getByLabel("Descripción", { exact: true }).inputValue(),
+      "Datos que no se deben perder",
+    );
+    await page
+      .getByRole("button", { name: "Escanear código de barras", exact: true })
+      .click();
+    await page.getByLabel("Código o SKU", { exact: true }).fill(sku);
+    await page
+      .getByRole("button", { name: "Usar este código", exact: true })
+      .click();
+    await page
+      .getByText(
+        "Ese código ya está asignado a otro producto. Cada producto debe tener un SKU diferente.",
+      )
+      .waitFor();
+    await page
+      .getByLabel("Código o SKU", { exact: true })
+      .fill("0012345678905");
+    await page
+      .getByRole("button", { name: "Usar este código", exact: true })
+      .click();
+    assert.equal(
+      await page.getByLabel("SKU", { exact: true }).inputValue(),
+      "0012345678905",
+    );
+    assert.equal(
+      await page.getByLabel("Nombre", { exact: true }).inputValue(),
+      "Producto con código de fábrica",
+    );
+    assert.equal(
+      await page.getByLabel("Descripción", { exact: true }).inputValue(),
+      "Datos que no se deben perder",
+    );
+    assert.equal(
+      await page.getByLabel("Color", { exact: true }).inputValue(),
+      "Azul",
+    );
+    assert.equal(products.length, 1, "Capture must not save the product");
+    await page
+      .getByRole("button", { name: "Guardar producto", exact: true })
+      .click();
+    await page
+      .getByRole("heading", { name: "Código de barras del producto" })
+      .waitFor();
+    assert.equal(products[1].sku, "0012345678905");
+    assert.equal(products[1].description, "Datos que no se deben perder");
     assert.deepEqual(errors, []);
     fs.writeFileSync("/tmp/tvg-barcode-product.json", JSON.stringify(products));
     console.log(
-      "PASS: automatic unique SKU, real Code128 image decoded, SVG download, print visibility, reopen label, unknown SKU, manual scan opens product.",
+      "PASS: automatic unique SKU, real Code128 image decoded, SVG download, print visibility, reopen label, unknown SKU, manual scan opens product; capture fills SKU, preserves draft and leading zeros, rejects duplicate, saves only on confirmation.",
     );
   } finally {
     await browser.close();

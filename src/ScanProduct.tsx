@@ -7,8 +7,10 @@ import { X, ScanLine } from "lucide-react";
 export function ScanProduct({
   onFind,
   onClose,
+  mode = "lookup",
 }: {
-  onFind: (code: string) => boolean;
+  onFind: (code: string) => boolean | string;
+  mode?: "lookup" | "capture";
   onClose: () => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -25,9 +27,12 @@ export function ScanProduct({
     controls.current?.stop();
     setReady(false);
     setManual(value);
-    if (!findRef.current(value))
+    const outcome = findRef.current(value);
+    if (outcome !== true)
       setError(
-        `No encontramos un producto con el código “${value}”. Revisá el SKU o actualizá el catálogo.`,
+        typeof outcome === "string"
+          ? outcome
+          : `No encontramos un producto con el código “${value}”. Revisá el SKU o actualizá el catálogo.`,
       );
   }
   const handleRef = useRef(find);
@@ -116,14 +121,19 @@ export function ScanProduct({
         aria-labelledby="scan-title"
       >
         <div className="modalhead">
-          <h2 id="scan-title">Escanear producto</h2>
+          <h2 id="scan-title">
+            {mode === "capture"
+              ? "Escanear código de barras"
+              : "Escanear producto"}
+          </h2>
           <button aria-label="Cerrar escáner" onClick={onClose}>
             <X />
           </button>
         </div>
         <p>
-          Apuntá la cámara al código de barras de la etiqueta. Al reconocerlo,
-          se abrirá el producto.
+          {mode === "capture"
+            ? "Apuntá al código que ya tiene el producto. Lo copiaremos al SKU y podrás completar la descripción, el precio y los demás datos."
+            : "Apuntá la cámara al código de barras de la etiqueta. Al reconocerlo, se abrirá el producto."}
         </p>
         <div className="scan-view">
           <video
@@ -160,13 +170,14 @@ export function ScanProduct({
             <input
               required
               autoComplete="off"
+              maxLength={60}
               value={manual}
               onChange={(e) => setManual(e.target.value)}
               placeholder="Ej.: REM-NEG-M"
             />
           </label>
           <button className="primary" type="submit">
-            Buscar producto
+            {mode === "capture" ? "Usar este código" : "Buscar producto"}
           </button>
         </form>
       </div>

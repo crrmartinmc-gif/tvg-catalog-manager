@@ -8,12 +8,21 @@ export type Product = {
   size?: string;
   productType?: string;
   price: number;
+  cost?: number;
   stock: number;
   active: boolean;
   image: string;
 };
-export type Connection = { url: string; version: string };
-export type Snapshot = { products: Product[]; version: string };
+export type Connection = {
+  url: string;
+  version: string;
+  supportsCost?: boolean;
+};
+export type Snapshot = {
+  products: Product[];
+  version: string;
+  supportsCost: boolean;
+};
 export const DEFAULT_SHEETS_ENDPOINT =
   "https://script.google.com/macros/s/AKfycbxi6cSpbXtnLBpkPpxtO5S5yxkGKQ7tNNuD5Z9mXTFD-7LRftixceESDq6Bs2R9P7s/exec";
 export const SHEET_URL =
@@ -34,6 +43,12 @@ export function validProducts(data: unknown): data is Product[] {
             (typeof p[key] === "string" &&
               p[key].length <= (key === "description" ? 2000 : 80)),
         ) &&
+        (p.cost === undefined ||
+          (typeof p.cost === "number" &&
+            Number.isFinite(p.cost) &&
+            p.cost >= 0 &&
+            Number.isSafeInteger(Math.round(p.cost * 100)) &&
+            Math.round(p.cost * 100) / 100 === p.cost)) &&
         Number.isFinite(p.price) &&
         p.price >= 0 &&
         Number.isInteger(p.stock) &&
@@ -46,11 +61,16 @@ export function validProducts(data: unknown): data is Product[] {
   );
 }
 export async function sheetsRequest(
-  connection: Pick<Connection, "url">,
+  connection: Pick<Connection, "url" | "supportsCost">,
   action: "read" | "write",
   version?: string,
   products?: Product[],
 ): Promise<Snapshot> {
+  const hasCosts = products?.some((p) => p.cost !== undefined);
+  if (action === "write" && hasCosts && !connection.supportsCost)
+    throw Error(
+      "Para guardar precios de costo, actualizá Código.gs y publicá una nueva versión de la implementación. Los cambios del formulario se conservaron.",
+    );
   const url = new URL(connection.url);
   if (
     url.origin !== "https://script.google.com" ||
@@ -95,13 +115,21 @@ export async function sheetsRequest(
         );
       throw Error(data.error || "No se pudo sincronizar.");
     }
-    if (data.schema !== 2)
+    if (data.schema !== 2 && data.schema !== 3)
       throw Error(
         "Actualizá el Código.gs y su implementación a la versión con descripción, color, talle y tipo antes de continuar.",
       );
     if (!validProducts(data.products) || typeof data.version !== "string")
       throw Error("Google Sheets devolvió datos inválidos.");
-    return { products: data.products, version: data.version };
+    if (action === "write" && hasCosts && data.schema !== 3)
+      throw Error(
+        "La implementación de Sheets no confirmó los costos. Actualizá Código.gs y volvé a leer el catálogo antes de continuar.",
+      );
+    return {
+      products: data.products,
+      version: data.version,
+      supportsCost: data.schema === 3,
+    };
   } catch (e) {
     if (e instanceof TypeError || e instanceof DOMException)
       throw Error(

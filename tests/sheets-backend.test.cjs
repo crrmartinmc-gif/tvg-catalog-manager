@@ -104,6 +104,7 @@ const product = {
   size: "M",
   productType: "Remera",
   price: 123.45,
+  cost: 75.25,
   stock: 4,
   active: true,
   image: "data:image/png;base64," + "A".repeat(90000),
@@ -130,7 +131,11 @@ test("round trip, image chunks, leading formulas, conflicts and deletion", () =>
   assert.equal(written.ok, true);
   assert.deepEqual(written.products, [product]);
   assert.notEqual(written.version, first.version);
-  assert.ok(s.sheet.values[1].slice(7).every((c) => c.length <= 40000));
+  assert.ok(
+    s.sheet.values[1]
+      .filter((_, i) => /^Imagen \d+$/.test(s.sheet.values[0][i]))
+      .every((c) => c.length <= 40000),
+  );
   assert.equal(
     s.request({ action: "write", version: first.version, products: [] }).ok,
     false,
@@ -204,7 +209,7 @@ test("migrate legacy rows without losing image, price or stock", () => {
   ]);
   const old = s.request({ action: "read" });
   assert.equal(old.ok, true);
-  assert.equal(old.schema, 2);
+  assert.equal(old.schema, 3);
   assert.equal(old.products[0].color, "");
   assert.equal(old.products[0].description, "");
   const updated = {
@@ -242,4 +247,94 @@ test("reject oversized or non-text attributes without altering data", () => {
     );
   }
   assert.deepEqual(s.request({ action: "read" }).products, []);
+});
+
+test("cost migration, zero and decimals persist, blank remains unknown", () => {
+  const s = setup();
+  const first = s.request({ action: "read" });
+  const noCost = { ...product, id: "no-cost", sku: "NO-COST" };
+  delete noCost.cost;
+  const products = [
+    noCost,
+    { ...product, id: "zero", sku: "ZERO", cost: 0 },
+    { ...product, id: "paid", sku: "PAID", cost: 80.35 },
+  ];
+  const saved = s.request({
+    action: "write",
+    version: first.version,
+    products,
+  });
+  assert.equal(saved.ok, true);
+  assert.equal(saved.schema, 3);
+  assert.equal(saved.products[0].cost, undefined);
+  assert.equal(saved.products[1].cost, 0);
+  assert.equal(saved.products[2].cost, 80.35);
+  const loaded = s.request({ action: "read" });
+  assert.deepEqual(loaded.products, saved.products);
+  for (const cost of [-1, 0.001, "12", null, Number.MAX_VALUE])
+    assert.equal(
+      s.request({
+        action: "write",
+        version: loaded.version,
+        products: [{ ...product, cost }],
+      }).ok,
+      false,
+    );
+  assert.deepEqual(s.request({ action: "read" }).products, loaded.products);
+});
+
+test("schema 2 migration preserves descriptions, attributes and all image chunks", () => {
+  const s = setup();
+  s.request({ action: "read" });
+  const chunks = product.image.match(/.{1,40000}/g);
+  s.sheet.values = [
+    [
+      "ID",
+      "Nombre",
+      "SKU",
+      "Categoria",
+      "Precio ARS",
+      "Stock",
+      "Activo",
+      ...chunks.map((_, i) => "Imagen " + (i + 1)),
+      "Descripcion",
+      "Color",
+      "Talle",
+      "Tipo",
+    ],
+    [
+      product.id,
+      product.name,
+      product.sku,
+      product.category,
+      product.price,
+      product.stock,
+      product.active,
+      ...chunks,
+      product.description,
+      product.color,
+      product.size,
+      product.productType,
+    ],
+  ];
+  const old = s.request({ action: "read" });
+  assert.equal(old.ok, true);
+  assert.equal(old.products[0].cost, undefined);
+  const migrated = s.request({
+    action: "write",
+    version: old.version,
+    products: [{ ...old.products[0], cost: 37.25 }],
+  });
+  assert.equal(migrated.ok, true);
+  assert.equal(migrated.products[0].cost, 37.25);
+  for (const key of [
+    "image",
+    "description",
+    "color",
+    "size",
+    "productType",
+    "price",
+    "stock",
+  ])
+    assert.equal(migrated.products[0][key], product[key]);
 });

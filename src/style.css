@@ -856,3 +856,35 @@ textarea:focus-visible {
     margin-top: 20px;
   }
 }
+.stats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.stats .cost-total {
+  background: #f0f7f3;
+  border-color: #cfe2d6;
+}
+.stats .cost-total small + small {
+  margin-top: 6px;
+}
+.cost-missing {
+  color: #9aa69e;
+  font-size: 11px;
+  font-weight: 400;
+}
+.cost-help {
+  font-size: 11px;
+  margin-bottom: 15px;
+}
+@media (max-width: 1200px) {
+  .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stats .cost-total {
+    grid-column: 1/-1;
+  }
+}

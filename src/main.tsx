@@ -78,7 +78,11 @@ function App() {
         "read",
       );
       setProducts(data.products);
-      setConnection({ url: DEFAULT_SHEETS_ENDPOINT, version: data.version });
+      setConnection({
+        url: DEFAULT_SHEETS_ENDPOINT,
+        version: data.version,
+        supportsCost: data.supportsCost,
+      });
       setSyncError(false);
       setError("");
     } catch (e) {
@@ -105,6 +109,12 @@ function App() {
   }, []);
   async function persist(next: Product[]) {
     if (pending.current || busy || syncError || !connection) return false;
+    if (!connection.supportsCost && next.some((p) => p.cost !== undefined)) {
+      setError(
+        "Para guardar precios de costo, actualizá Código.gs y publicá una nueva versión de la implementación. Los cambios del formulario se conservaron.",
+      );
+      return false;
+    }
     pending.current = true;
     setBusy(true);
     try {
@@ -115,7 +125,11 @@ function App() {
         next,
       );
       setProducts(data.products);
-      setConnection({ ...connection, version: data.version });
+      setConnection({
+        ...connection,
+        version: data.version,
+        supportsCost: data.supportsCost,
+      });
       setError("");
       return true;
     } catch (e) {
@@ -147,8 +161,14 @@ function App() {
       !draft.name.trim() ||
       !draft.sku.trim() ||
       !draft.category.trim() ||
+      (draft.cost !== undefined &&
+        (!Number.isFinite(draft.cost) ||
+          draft.cost < 0 ||
+          !Number.isSafeInteger(Math.round(draft.cost * 100)))) ||
       !Number.isFinite(draft.price) ||
       draft.price < 0 ||
+      (draft.cost !== undefined &&
+        Math.round(draft.cost * 100) / 100 !== draft.cost) ||
       !Number.isInteger(draft.stock) ||
       draft.stock < 0
     ) {
@@ -232,6 +252,9 @@ function App() {
             ? !p.active
             : p.stock <= 5)),
   );
+  const missingCosts = products.filter(
+    (p) => p.stock > 0 && p.cost === undefined,
+  ).length;
   function csv() {
     const cell = (v: string | number) =>
       '"' +
@@ -248,7 +271,8 @@ function App() {
         "Color",
         "Talle",
         "Tipo",
-        "Precio ARS",
+        "Precio de venta ARS",
+        "Costo unitario ARS",
         "Stock",
         "Estado",
       ],
@@ -261,6 +285,7 @@ function App() {
         p.size || "",
         p.productType || "",
         p.price,
+        p.cost ?? "",
         p.stock,
         p.active ? "Activo" : "Inactivo",
       ]),
@@ -438,6 +463,26 @@ function App() {
               </strong>
               <small>A precio de venta</small>
             </article>
+            <article className="cost-total">
+              <span>
+                Costo total del inventario<span>$</span>
+              </span>
+              <strong className="value">
+                {money(
+                  products.reduce(
+                    (total, p) =>
+                      total + Math.round((p.cost ?? 0) * 100) * p.stock,
+                    0,
+                  ) / 100,
+                )}
+              </strong>
+              <small>
+                {connection && !connection.supportsCost
+                  ? "Actualizá GS para guardar costos"
+                  : `${missingCosts} ${missingCosts === 1 ? "producto" : "productos"} en stock sin costo cargado`}
+              </small>
+              <small>Costo unitario × unidades en stock</small>
+            </article>
           </div>
           <div className="panel">
             <div className="paneltitle">
@@ -492,7 +537,8 @@ function App() {
                     <tr>
                       <th>PRODUCTO</th>
                       <th>CATEGORÍA</th>
-                      <th>PRECIO</th>
+                      <th>PRECIO DE VENTA</th>
+                      <th>COSTO UNITARIO</th>
                       <th>STOCK</th>
                       <th>ESTADO</th>
                       <th>ACCIONES</th>
@@ -534,6 +580,13 @@ function App() {
                         </td>
                         <td>{p.category}</td>
                         <td className="price">{money(p.price)}</td>
+                        <td className="price">
+                          {p.cost === undefined ? (
+                            <span className="cost-missing">Sin cargar</span>
+                          ) : (
+                            money(p.cost)
+                          )}
+                        </td>
                         <td>
                           <span
                             className={p.stock <= 5 ? "stock low" : "stock"}
@@ -755,9 +808,41 @@ function App() {
                 }
               />
             </label>
+            <label>
+              Precio de costo (ARS)
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Costo por unidad"
+                value={draft.cost ?? ""}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    cost:
+                      e.target.value === ""
+                        ? undefined
+                        : e.target.valueAsNumber,
+                  })
+                }
+              />
+            </label>
+            {connection && !connection.supportsCost && (
+              <p className="cost-help">
+                Para guardar costos, primero actualizá el{" "}
+                <a
+                  href="https://github.com/crrmartinmc-gif/tvg-catalog-manager/tree/main/integrations/google-sheets"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  script de Google Sheets
+                </a>
+                . Podés seguir usando el catálogo sin costo cargado.
+              </p>
+            )}
             <div className="formrow">
               <label>
-                Precio (ARS)
+                Precio de venta (ARS)
                 <input
                   required
                   type="number"

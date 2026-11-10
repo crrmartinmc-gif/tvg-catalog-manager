@@ -52,7 +52,7 @@ function doPost(e) {
       ok: true,
       products: products,
       version: version,
-      schema: 2,
+      schema: 3,
     });
   } catch (error) {
     const known = error && error.message;
@@ -103,6 +103,12 @@ function tvgValidate(products) {
       typeof p.category !== "string" ||
       !p.category.trim() ||
       p.category.length > 60 ||
+      (p.cost !== undefined &&
+        (typeof p.cost !== "number" ||
+          !Number.isFinite(p.cost) ||
+          p.cost < 0 ||
+          !Number.isSafeInteger(Math.round(p.cost * 100)) ||
+          Math.round(p.cost * 100) / 100 !== p.cost)) ||
       !Number.isFinite(p.price) ||
       p.price < 0 ||
       !Number.isInteger(p.stock) ||
@@ -160,6 +166,11 @@ function tvgRead(sheet) {
         sku: String(row[2]),
         category: String(row[3]),
         price: row[4],
+        cost:
+          values[0].indexOf("Costo ARS") < 0 ||
+          row[values[0].indexOf("Costo ARS")] === ""
+            ? undefined
+            : row[values[0].indexOf("Costo ARS")],
         stock: row[5],
         active: row[6],
         image: row
@@ -187,11 +198,11 @@ function tvgWrite(sheet, products) {
       return Math.ceil(p.image.length / 40000);
     }),
   );
-  const columns = Math.max(7 + imageCount + 4, sheet.getLastColumn());
-  const imageColumns = columns - 11;
+  const columns = Math.max(7 + imageCount + 5, sheet.getLastColumn());
+  const imageColumns = columns - 12;
   const headers = TVG_HEADERS.slice(0, 7);
   for (let i = 1; i <= imageColumns; i++) headers.push("Imagen " + i);
-  headers.push("Descripcion", "Color", "Talle", "Tipo");
+  headers.push("Descripcion", "Color", "Talle", "Tipo", "Costo ARS");
   const rows = products.map(function (p) {
     const chunks = p.image.match(/.{1,40000}/g) || [""];
     while (chunks.length < imageColumns) chunks.push("");
@@ -208,6 +219,7 @@ function tvgWrite(sheet, products) {
       tvgText(p.color || ""),
       tvgText(p.size || ""),
       tvgText(p.productType || ""),
+      p.cost === undefined ? "" : p.cost,
     ]);
   });
   const rowCount = Math.max(rows.length + 1, sheet.getLastRow());

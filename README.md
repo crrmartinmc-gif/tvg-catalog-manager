@@ -63,3 +63,9 @@ Android/Chrome: menú → Instalar aplicación o Agregar a pantalla de inicio. i
 El catálogo consulta Sheets cada 1 minuto mientras la pestaña está visible y también al volver a la app. Las escrituras siguen siendo inmediatas al guardar. Requiere conexión a Internet; no guarda cambios pendientes sin conexión.
 
 Con Vite iniciado, `npm run test:install` verifica el intervalo de 60 segundos, el manifiesto, el ícono y los criterios de instalación de Chromium.
+
+## Precio de costo
+
+Cada producto admite un precio de costo unitario en ARS, separado del precio de venta. El contador Costo total del inventario calcula Σ(costo unitario × unidades en stock), con cálculo en centavos, sin depender de búsquedas o filtros. Incluye productos activos e inactivos. Los productos sin costo se identifican como Sin cargar y el contador avisa cuántos faltan con stock; cero se considera un costo cargado. El dato se guarda en Sheets y se exporta a CSV.
+
+Se necesita actualizar Apps Script al esquema 3 para guardar costos. La app conserva la lectura y edición de los campos anteriores con el esquema 2; no envía costos si el script aún no los soporta. Pruebas del circuito de costos, con Vite iniciado: `npm run test:costs`.

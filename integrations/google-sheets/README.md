@@ -31,3 +31,9 @@ El acceso sin clave fue solicitado por el propietario para uso familiar. Cualqui
 ## Descripción, color, talle y tipo
 
 Actualizá Código.gs y desplegá una nueva versión de la misma implementación para habilitar estos campos. El script lee las filas anteriores sin modificar sus imágenes y agrega Descripcion, Color, Talle y Tipo al siguiente guardado. No agregues ni desplaces columnas manualmente. Los cuatro campos son opcionales: descripción admite 2000 caracteres y los demás 80. La app requiere la versión de esquema 2 para evitar que una implementación anterior descarte los campos nuevos.
+
+## Precio de costo y total del inventario
+
+Actualizá Código.gs y publicá una nueva versión de la implementación existente para habilitar el esquema 3. La app sigue leyendo el esquema 2 y permite guardar los campos anteriores; bloquea el envío de costos a un script que no los soporta para evitar su pérdida. Después de actualizar la implementación, cerrá el formulario y tocá Actualizar ahora antes de cargar costos.
+
+El script incorpora la columna Costo ARS al guardar, sin modificar las demás pestañas. Los productos anteriores quedan sin costo hasta que se complete el dato. Un campo vacío no equivale a cero; cero es un costo válido. Se admiten importes no negativos con hasta dos decimales. El contador calcula la suma de costo unitario por stock de todos los productos, incluidos los inactivos, y avisa cuántos productos con stock no tienen costo. No depende de los filtros de la tabla. Los costos se incluyen en el CSV.

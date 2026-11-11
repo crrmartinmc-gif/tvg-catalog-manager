@@ -44,14 +44,16 @@ export function SaleReceipt({
             <img src={logo} alt="TVG — Te Va a Gustar Lencería" />
             <div>
               <h2>Comprobante de venta</h2>
-              <strong>{sale.number}</strong>
-              <p>
-                {new Intl.DateTimeFormat("es-AR", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                  timeZone: "America/Argentina/Buenos_Aires",
-                }).format(new Date(sale.createdAt))}
-              </p>
+              <div className="receipt-reference">
+                <strong>{sale.number}</strong>
+                <p>
+                  {new Intl.DateTimeFormat("es-AR", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                    timeZone: "America/Argentina/Buenos_Aires",
+                  }).format(new Date(sale.createdAt))}
+                </p>
+              </div>
             </div>
           </div>
           <p className="internal-receipt">

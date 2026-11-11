@@ -30,9 +30,11 @@ const assert = require("node:assert/strict");
       });
     });
     await p.goto("http://127.0.0.1:5173/tvg-catalog-manager/");
-    await p
-      .getByText("Google Sheets · actualización automática cada 1 minuto")
-      .waitFor();
+    await p.waitForFunction(() =>
+      [...document.querySelectorAll("button")].some(
+        (b) => b.textContent.trim() === "Nuevo producto" && !b.disabled,
+      ),
+    );
     const baseline = reads;
     await p.clock.fastForward(59000);
     assert.equal(reads, baseline);

@@ -15,7 +15,9 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import "./style.css";
+import "./theme.css";
 import tvgLogo from "./assets/logo-tvg.png";
+import { PhotoViewer } from "./PhotoViewer";
 import { Sales, getPendingSale } from "./Sales";
 import { SaleError, type Sale, type SaleRequest } from "./sales-model";
 const BarcodeLabel = lazy(() =>
@@ -61,6 +63,7 @@ function App() {
   const [status, setStatus] = useState("");
   const [scanning, setScanning] = useState<false | "lookup" | "capture">(false);
   const [label, setLabel] = useState<Product | null>(null);
+  const [photo, setPhoto] = useState<Product | null>(null);
   const [draft, setDraft] = useState<Product | null>(null);
   const [view, setView] = useState(() =>
     getPendingSale() ? "sell" : "catalog",
@@ -76,7 +79,11 @@ function App() {
   const pending = useRef(false);
   const interactionOpen = useRef(false);
   interactionOpen.current =
-    !!draft || !!scanning || !!label || (salePending && !!connection);
+    !!draft ||
+    !!scanning ||
+    !!label ||
+    !!photo ||
+    (salePending && !!connection);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
   async function refresh() {
     if (pending.current || interactionOpen.current) return;
@@ -367,12 +374,6 @@ function App() {
             height={648}
           />
         </a>
-        <div className="workspace">
-          <span className="avatar">TVG</span>
-          <div>
-            Te Va a Gustar<small>Lencería · Catálogo</small>
-          </div>
-        </div>
         <div className="navlabel">PRINCIPAL</div>
         <button
           className={view === "dashboard" ? "nav selected" : "nav"}
@@ -469,33 +470,19 @@ function App() {
         )}
         {view !== "sell" && (
           <section>
-            <div className="syncbar">
-              <span>
-                {busy
-                  ? "Sincronizando…"
-                  : connection
-                    ? "Google Sheets · actualización automática cada 1 minuto"
-                    : "Esperando conexión con Google Sheets"}
-              </span>
-              <button disabled={busy || !!draft} onClick={() => void refresh()}>
-                Actualizar ahora
-              </button>
-            </div>
             {syncError && (
               <div className="error" role="alert">
                 La última escritura no se pudo confirmar. Cerrá el formulario y
-                actualizá desde Sheets antes de seguir editando.
+                reintentá la conexión antes de seguir editando.
               </div>
             )}
             <div className="heading">
               <div>
-                <div className="eyebrow">TU NEGOCIO, EN ORDEN</div>
                 <h1>
                   {view === "catalog"
                     ? "Catálogo de productos"
                     : "Resumen del negocio"}
                 </h1>
-                <p>Todo lo que vendés, en un solo lugar.</p>
               </div>
               <div className="heading-actions">
                 <button
@@ -522,6 +509,11 @@ function App() {
               <div role="alert" className="error">
                 {error}
               </div>
+            )}
+            {(syncError || (!connection && error)) && !salePending && (
+              <button disabled={busy || !!draft} onClick={() => void refresh()}>
+                Reintentar conexión
+              </button>
             )}
             {notice && (
               <div role="status" className="notice">
@@ -652,7 +644,17 @@ function App() {
                           <td>
                             <div className="product">
                               {p.image ? (
-                                <img src={p.image} alt="" />
+                                <button
+                                  type="button"
+                                  className="product-photo"
+                                  aria-label={"Ampliar foto de " + p.name}
+                                  onClick={() => setPhoto(p)}
+                                >
+                                  <img
+                                    src={p.image}
+                                    alt={"Foto de " + p.name}
+                                  />
+                                </button>
                               ) : (
                                 <span className="placeholder">
                                   <Package size={23} />
@@ -1004,7 +1006,14 @@ function App() {
             </label>
             {draft.image && (
               <div className="imagepreview">
-                <img src={draft.image} alt="Vista previa" />
+                <button
+                  type="button"
+                  className="imagepreview-photo"
+                  aria-label="Ampliar imagen cargada"
+                  onClick={() => setPhoto({ ...draft })}
+                >
+                  <img src={draft.image} alt="Vista previa" />
+                </button>
                 <button
                   type="button"
                   onClick={() => setDraft({ ...draft, image: "" })}
@@ -1051,6 +1060,7 @@ function App() {
           </form>
         </div>
       )}
+      {photo && <PhotoViewer product={photo} onClose={() => setPhoto(null)} />}
       <Suspense
         fallback={
           <div className="overlay">

@@ -81,3 +81,7 @@ Las últimas 100 ventas se consultan y reimprimen desde la pestaña Vender. El h
 Si se pierde la confirmación, la app conserva el identificador de la operación en este navegador y permite reintentar la misma venta, incluso tras recargar, sin descontar stock otra vez. Mientras existe una confirmación pendiente, el carrito queda bloqueado y no se permite modificar el catálogo desde ese navegador. Hace falta almacenamiento local habilitado para conservar esa referencia.
 
 Actualizar Apps Script al esquema 4 para confirmar ventas. Con esquemas 2 o 3 se puede seguir usando el catálogo y preparar el carrito, pero no confirmar la venta. Con Vite iniciado: `npm run test:sales` prueba el circuito de venta, impresión, stock, conflictos y recuperación de confirmaciones con el código real del backend ejecutado sobre servicios de Sheets simulados.
+
+## Diseño y fotos
+
+Diseño en blanco, negro y grises, con paneles translúcidos y pequeñas siluetas de lencería en el fondo. La foto de cada producto se puede abrir ampliada desde el catálogo o desde la vista previa del formulario. El visor conserva las proporciones de la imagen y se cierra con la X, Escape o tocando fuera; admite computadora y celular. La sincronización sigue funcionando cada minuto aunque ya no muestre la franja informativa superior.

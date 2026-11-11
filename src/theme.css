@@ -1,0 +1,565 @@
+/* Tema monocromático aprobado: superficies translúcidas y motivos de lencería. */
+@media screen {
+  :root {
+    color: #545454;
+    background: #f8f8f8;
+    --theme-ink: #545454;
+    --theme-muted: #777777;
+    --theme-accent: #828282;
+    --theme-border: rgba(150, 150, 150, 0.16);
+    --theme-glass: rgba(253, 253, 253, 0.72);
+  }
+  body {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(
+        ellipse at 100% 0%,
+        rgba(220, 220, 220, 0.28),
+        transparent 48%
+      ),
+      radial-gradient(
+        ellipse at 0% 90%,
+        rgba(226, 226, 226, 0.23),
+        transparent 45%
+      ),
+      linear-gradient(130deg, #fdfdfd, #f8f8f8 60%, #fbfbfb);
+    background-attachment: fixed;
+  }
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    pointer-events: none;
+    z-index: -1;
+    filter: blur(40px);
+    border: none;
+    box-shadow: none;
+  }
+  body::before {
+    width: 540px;
+    height: 700px;
+    right: -340px;
+    top: 80px;
+    border-radius: 62% 38% 68% 32%;
+    transform: rotate(30deg);
+    background: linear-gradient(
+      145deg,
+      rgba(190, 190, 190, 0.22),
+      rgba(243, 243, 243, 0.1)
+    );
+  }
+  body::after {
+    width: 520px;
+    height: 420px;
+    left: -300px;
+    bottom: -180px;
+    border-radius: 42% 58% 28% 72%;
+    transform: rotate(-25deg);
+    background: linear-gradient(
+      25deg,
+      rgba(211, 211, 211, 0.18),
+      rgba(246, 246, 246, 0.1)
+    );
+  }
+  .layout {
+    position: relative;
+    z-index: 0;
+    background: transparent;
+  }
+  aside {
+    background: rgba(253, 253, 253, 0.64);
+    border-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  header,
+  .mobile-nav {
+    background: rgba(254, 254, 254, 0.67);
+    border-color: rgba(255, 255, 255, 0.64);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: var(--theme-muted);
+  }
+  header b {
+    color: #969696;
+  }
+  .brand img,
+  .header-brand img {
+    mix-blend-mode: multiply;
+  }
+  .workspace {
+    background: rgba(255, 255, 255, 0.45);
+    border-color: rgba(255, 255, 255, 0.8);
+    color: #4c4c4c;
+    box-shadow: 0 5px 18px rgba(81, 81, 81, 0.03);
+  }
+  .workspace small,
+  .local,
+  .local small,
+  .navlabel {
+    color: #6e6e6e;
+  }
+  .avatar {
+    background: rgba(130, 130, 130, 0.16);
+    color: #5b5b5b;
+  }
+  .nav {
+    background: transparent;
+    color: #626262;
+  }
+  .nav:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+  .selected,
+  .nav.selected {
+    background: rgba(182, 182, 182, 0.18);
+    color: #767676;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+  .count {
+    background: rgba(104, 104, 104, 0.13);
+    color: #585858;
+  }
+  .local i {
+    background: #7f7f7f;
+  }
+  h1 {
+    color: #484848;
+    letter-spacing: -0.85px;
+  }
+  h2,
+  h3 {
+    color: #585858;
+  }
+  p {
+    color: var(--theme-muted);
+  }
+  .eyebrow {
+    color: #6c6c6c;
+  }
+  button {
+    background: rgba(253, 253, 253, 0.65);
+    border-color: rgba(107, 107, 107, 0.2);
+    color: #5d5d5d;
+    box-shadow: 0 3px 12px rgba(74, 74, 74, 0.025);
+  }
+  button:hover {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(105, 105, 105, 0.35);
+  }
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline-color: rgba(112, 112, 112, 0.45);
+  }
+  .primary {
+    background: linear-gradient(135deg, #e7e7e7, #d7d7d7);
+    color: #5c5c5c;
+    border-color: #d1d1d1;
+    box-shadow: 0 3px 10px rgba(111, 111, 111, 0.055);
+  }
+  .primary:hover {
+    background: linear-gradient(135deg, #dedede, #cdcdcd);
+    border-color: #c0c0c0;
+  }
+  .stats article,
+  .panel {
+    background: var(--theme-glass);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow:
+      0 10px 35px rgba(99, 99, 99, 0.027),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(17px);
+    -webkit-backdrop-filter: blur(17px);
+    border-radius: 13px;
+  }
+  .stats article > span {
+    color: #676767;
+  }
+  .stats strong {
+    color: #575757;
+  }
+  .stats small {
+    color: #686868;
+  }
+  .stats .cost-total {
+    background: rgba(242, 242, 242, 0.78);
+    border-color: rgba(255, 255, 255, 0.85);
+  }
+  .stats .value {
+    font-size: 22px;
+    overflow-wrap: anywhere;
+  }
+  .green {
+    background: #868686;
+  }
+  .orange {
+    background: #9f9f9f;
+  }
+  .paneltitle h2 span {
+    background: rgba(119, 119, 119, 0.12);
+    color: #666666;
+  }
+  .search,
+  .sale-search input,
+  .sale-fields input,
+  form input:not([type="checkbox"]),
+  textarea,
+  select {
+    background: rgba(255, 255, 255, 0.65);
+    border-color: var(--theme-border);
+    color: #4b4b4b;
+  }
+  .search {
+    color: #818181;
+  }
+  .search input {
+    background: transparent;
+    color: #4b4b4b;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #838383;
+  }
+  .tablewrap th {
+    background: rgba(238, 238, 238, 0.42);
+    color: #6b6b6b;
+    padding: 15px 18px;
+  }
+  .tablewrap td {
+    border-color: rgba(122, 122, 122, 0.1);
+    color: #5b5b5b;
+    padding: 17px 18px;
+  }
+  .tablewrap tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .tablewrap tbody tr:hover {
+    background: rgba(255, 255, 255, 0.36);
+  }
+  .product b,
+  .price {
+    color: #434343;
+  }
+  .product small,
+  .cost-missing {
+    color: #6f6f6f;
+  }
+  .product .attributes {
+    color: #6a6a6a;
+  }
+  .placeholder,
+  .product img {
+    background: rgba(225, 225, 225, 0.38);
+    color: #8c8c8c;
+  }
+  .badge {
+    background: rgba(189, 189, 189, 0.17);
+    color: #646464;
+  }
+  .inactive {
+    background: rgba(108, 108, 108, 0.1);
+    color: #767676;
+  }
+  .low {
+    color: #7f7f7f;
+  }
+  .actions button {
+    background: transparent;
+    color: #777777;
+    box-shadow: none;
+  }
+  .actions button:hover {
+    background: rgba(214, 214, 214, 0.6);
+  }
+  footer,
+  .empty {
+    border-color: rgba(115, 115, 115, 0.12);
+  }
+  footer,
+  .footnote {
+    color: #767676;
+  }
+  .empty > span {
+    background: rgba(188, 188, 188, 0.24);
+    color: #878787;
+  }
+  .empty h3 {
+    color: #4d4d4d;
+  }
+  .empty button,
+  .capture-barcode {
+    color: #616161;
+    border-color: rgba(117, 117, 117, 0.27);
+  }
+  .syncbar {
+    color: #6c6c6c;
+  }
+  a {
+    color: #5f5f5f;
+  }
+  .notice,
+  .sale-info {
+    background: rgba(235, 235, 235, 0.78);
+    border-color: rgba(131, 131, 131, 0.2);
+    color: #5f5f5f;
+  }
+  .overlay {
+    background: rgba(55, 55, 55, 0.28);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+  }
+  form:not(.manual-scan),
+  .barcode-dialog,
+  .receipt-dialog {
+    background: rgba(248, 248, 248, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 24px 100px rgba(58, 58, 58, 0.18);
+  }
+  form label,
+  .sale-fields label,
+  .sale-search {
+    color: #616161;
+  }
+  .modalbuttons {
+    border-color: var(--theme-border);
+  }
+  .product .description,
+  .sale-product small,
+  .cart-line-title small {
+    color: #727272;
+  }
+  .sale-product,
+  .cart-lines article,
+  .manual-scan {
+    border-color: rgba(115, 115, 115, 0.12);
+  }
+  .sale-product strong,
+  .sale-total,
+  .cart-line-title b {
+    color: #4c4c4c;
+  }
+  .sale-total {
+    background: rgba(235, 235, 235, 0.55);
+  }
+  .sale-history .paneltitle small {
+    color: #777777;
+  }
+  .quantity-controls {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: var(--theme-border);
+  }
+  .quantity-controls input {
+    background: transparent;
+    color: #535353;
+  }
+  .sale-fields select {
+    background: rgba(255, 255, 255, 0.66);
+  }
+  .receipt-print,
+  .print-label {
+    background: white;
+    color: #343434;
+  }
+  .receipt-print h2,
+  .receipt-print h3 {
+    color: #343434;
+  }
+  .receipt-print p {
+    color: #828282;
+  }
+  .internal-receipt {
+    background: #f5f5f5;
+  }
+}
+@media screen and (max-width: 760px) {
+  body::before {
+    width: 720px;
+    height: 720px;
+    top: -340px;
+    right: -450px;
+    opacity: 0.8;
+  }
+  body::after {
+    width: 620px;
+    height: 620px;
+    left: -330px;
+    bottom: -240px;
+    opacity: 0.7;
+  }
+  .stats article,
+  .panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .mobile-nav {
+    background: rgba(249, 249, 249, 0.58);
+  }
+  .tablewrap td,
+  .tablewrap th {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}
+
+@media screen {
+  h1 {
+    font-weight: 600;
+    letter-spacing: -0.65px;
+  }
+  .stats strong {
+    font-weight: 500;
+  }
+  .eyebrow {
+    color: #989898;
+    letter-spacing: 2px;
+  }
+  .stats article > span,
+  .stats small,
+  .product small,
+  .tablewrap td {
+    color: #7b7b7b;
+  }
+  .tablewrap th {
+    color: #8a8a8a;
+  }
+  .paneltitle h2,
+  .product b,
+  .price {
+    color: #5d5d5d;
+  }
+  .selected,
+  .nav.selected {
+    box-shadow: none;
+    border: 1px solid rgba(183, 183, 183, 0.2);
+  }
+  .panel,
+  .stats article {
+    border-color: rgba(190, 190, 190, 0.28);
+  }
+  .cost-total small {
+    color: #898989;
+  }
+}
+
+/* Paleta y fondo de lencería en escala de grises. */
+@media screen {
+  :root {
+    background: #f4f4f3;
+    color: #333;
+    --theme-ink: #303030;
+    --theme-muted: #777;
+    --theme-accent: #303030;
+    --theme-border: rgba(0, 0, 0, 0.11);
+    --theme-glass: rgba(255, 255, 255, 0.76);
+  }
+  body {
+    background: linear-gradient(135deg, #fdfdfc, #f0f0ef 55%, #fafafa);
+    background-attachment: fixed;
+  }
+  body::before {
+    inset: 0;
+    width: auto;
+    height: auto;
+    transform: none;
+    filter: none;
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+    background-image: url("./assets/lingerie-pattern.svg");
+    background-repeat: repeat;
+    background-size: 400px 358px;
+    background-position: 32px 20px;
+    opacity: 1;
+  }
+  body::after {
+    display: none;
+  }
+  aside {
+    background: rgba(255, 255, 255, 0.68);
+    border-right: 1px solid rgba(0, 0, 0, 0.055);
+  }
+  header,
+  .mobile-nav {
+    background: rgba(255, 255, 255, 0.68);
+    border-color: rgba(0, 0, 0, 0.055);
+  }
+  h1,
+  h2,
+  h3,
+  .paneltitle h2,
+  .product b,
+  .price,
+  .stats strong {
+    color: #303030;
+  }
+  .primary {
+    background: linear-gradient(135deg, #353535, #161616);
+    border-color: #222;
+    color: white;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  }
+  .primary:hover {
+    background: #414141;
+    border-color: #333;
+  }
+  .nav.selected,
+  .selected {
+    background: rgba(0, 0, 0, 0.065);
+    border-color: rgba(0, 0, 0, 0.06);
+    color: #252525;
+  }
+  .stats .cost-total {
+    background: rgba(238, 238, 238, 0.8);
+    border-color: rgba(255, 255, 255, 0.9);
+  }
+  .green,
+  .orange {
+    background: #898989;
+  }
+  .low {
+    color: #555;
+  }
+  .product .attributes,
+  .capture-barcode,
+  a,
+  .sale-product strong,
+  .sale-total,
+  .cart-line-title b {
+    color: #555;
+  }
+  .sale-total {
+    background: rgba(225, 225, 225, 0.5);
+  }
+  .badge {
+    background: rgba(0, 0, 0, 0.065);
+    color: #555;
+  }
+  .receipt-print,
+  .print-label {
+    background: white;
+  }
+}
+@media screen and (max-width: 760px) {
+  body::before {
+    inset: 0;
+    width: auto;
+    height: auto;
+    background-size: 320px 286px;
+    background-position: 25px 155px;
+    opacity: 1;
+  }
+  .stats article,
+  .panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media screen {
+  .navlabel {
+    margin-top: 30px;
+  }
+}

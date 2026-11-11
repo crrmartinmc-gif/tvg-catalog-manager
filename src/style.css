@@ -1109,9 +1109,9 @@ textarea:focus-visible {
   padding-bottom: 20px;
 }
 .receipt-brand img {
-  width: 180px;
+  width: 300px;
   height: auto;
-  max-width: 45%;
+  max-width: 55%;
 }
 .receipt-brand h2 {
   font-size: 15px;
@@ -1241,10 +1241,28 @@ textarea:focus-visible {
     padding: 8px;
   }
   .receipt-brand {
-    gap: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
   }
   .receipt-brand img {
-    width: 140px;
+    width: 260px;
+    max-width: 100%;
+    align-self: center;
+  }
+  .receipt-brand > div {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .receipt-brand h2 {
+    margin-bottom: 0;
+  }
+  .receipt-brand p {
+    width: 100%;
+    margin-top: 0;
   }
   .receipt-brand h2,
   .receipt-brand strong {
@@ -1309,5 +1327,27 @@ textarea:focus-visible {
   }
   .mobile-nav {
     display: none !important;
+  }
+}
+
+@media print {
+  .receipt-brand {
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+  }
+  .receipt-brand img {
+    width: 300px;
+    max-width: 55%;
+  }
+  .receipt-brand > div {
+    display: block;
+    width: auto;
+  }
+  .receipt-brand h2 {
+    margin-bottom: 10px;
+  }
+  .receipt-brand p {
+    margin-top: 8px;
   }
 }

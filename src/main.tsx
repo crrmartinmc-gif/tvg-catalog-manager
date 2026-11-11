@@ -41,7 +41,7 @@ const empty = (): Product => ({
   name: "",
   sku:
     "TVG-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase(),
-  category: "General",
+  category: "Lencería",
   description: "",
   color: "",
   size: "",
@@ -220,7 +220,6 @@ function App() {
     if (
       !draft.name.trim() ||
       !draft.sku.trim() ||
-      !draft.category.trim() ||
       (draft.cost !== undefined &&
         (!Number.isFinite(draft.cost) ||
           draft.cost < 0 ||
@@ -255,7 +254,7 @@ function App() {
       ...draft,
       name: draft.name.trim(),
       sku: draft.sku.trim(),
-      category: draft.category.trim(),
+      category: "Lencería",
       description: (draft.description || " ").trim(),
       color: (draft.color || " ").trim(),
       size: (draft.size || " ").trim(),
@@ -871,28 +870,15 @@ function App() {
               <ScanLine size={17} />
               Escanear código de barras
             </button>
-            <div className="formrow">
-              <label>
-                SKU
-                <input
-                  required
-                  maxLength={60}
-                  value={draft.sku}
-                  onChange={(e) => setDraft({ ...draft, sku: e.target.value })}
-                />
-              </label>
-              <label>
-                Categoría
-                <input
-                  required
-                  maxLength={60}
-                  value={draft.category}
-                  onChange={(e) =>
-                    setDraft({ ...draft, category: e.target.value })
-                  }
-                />
-              </label>
-            </div>
+            <label>
+              SKU
+              <input
+                required
+                maxLength={60}
+                value={draft.sku}
+                onChange={(e) => setDraft({ ...draft, sku: e.target.value })}
+              />
+            </label>
             <label>
               Descripción
               <textarea

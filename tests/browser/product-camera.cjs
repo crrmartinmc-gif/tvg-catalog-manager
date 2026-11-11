@@ -32,6 +32,7 @@ const fs = require('node:fs');
     await page.getByLabel('Nombre', { exact: true }).fill('Producto con foto');
     await page.getByLabel('Descripción', { exact: true }).fill('Conservar estos datos');
     assert.equal(await page.locator('input[type=file]').count(), 0);
+    assert.equal(await page.getByRole('dialog', { name: 'Nuevo producto', exact: true }).getByLabel('Categoría', { exact: true }).count(), 0);
     await page.getByRole('button', { name: 'Sacar foto', exact: true }).click();
     const camera = page.getByRole('dialog', { name: 'Sacar foto del producto', exact: true });
     await camera.getByText('Cámara lista para sacar la foto.', { exact: true }).waitFor();
@@ -71,6 +72,7 @@ const fs = require('node:fs');
     assert.equal(writes, 1);
     assert.equal(products[0].image, image);
     assert.equal(products[0].name, 'Producto con foto');
+    assert.equal(products[0].category, 'Lencería');
     assert.deepEqual(errors, []);
     console.log('PASS: real camera capture with a fake device, JPEG saved only on confirmation, draft preserved, cancellation/escape release camera, denied permission and retry, mobile viewport.');
   } finally { await browser.close(); }

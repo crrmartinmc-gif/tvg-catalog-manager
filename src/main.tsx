@@ -13,11 +13,13 @@ import {
   ScanLine,
   Barcode,
   ShoppingCart,
+  Camera,
 } from "lucide-react";
 import "./style.css";
 import "./theme.css";
 import tvgLogo from "./assets/logo-tvg.png";
 import { PhotoViewer } from "./PhotoViewer";
+import { ProductCamera } from "./ProductCamera";
 import { Sales, getPendingSale } from "./Sales";
 import { SaleError, type Sale, type SaleRequest } from "./sales-model";
 const BarcodeLabel = lazy(() =>
@@ -73,6 +75,7 @@ function App() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [notice, setNotice] = useState("");
   const [upload, setUpload] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [connection, setConnection] = useState<Connection | null>(null);
   const [busy, setBusy] = useState(false);
   const [syncError, setSyncError] = useState(false);
@@ -996,14 +999,13 @@ function App() {
                 />
               </label>
             </div>
-            <label>
-              Imagen · JPG, PNG o WebP, hasta 2 MB
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => void image(e.target.files?.[0])}
-              />
-            </label>
+            <div className="product-photo-field">
+              <span>Foto del producto</span>
+              <button type="button" className="capture-barcode" disabled={busy || upload}
+                onClick={() => setCameraOpen(true)}>
+                <Camera size={18} /> Sacar foto
+              </button>
+            </div>
             {draft.image && (
               <div className="imagepreview">
                 <button
@@ -1060,6 +1062,10 @@ function App() {
           </form>
         </div>
       )}
+      {draft && cameraOpen && <ProductCamera
+        onClose={() => setCameraOpen(false)}
+        onCapture={async file => { await image(file); setCameraOpen(false); }}
+      />}
       {photo && <PhotoViewer product={photo} onClose={() => setPhoto(null)} />}
       <Suspense
         fallback={

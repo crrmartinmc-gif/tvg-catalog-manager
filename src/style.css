@@ -1409,3 +1409,14 @@ textarea:focus-visible {
     font-size: 14px;
   }
 }
+
+.product-photo-field { display:flex; flex-direction:column; gap:8px; }
+.product-camera { width:min(640px,calc(100vw - 24px)); max-height:calc(100dvh - 24px); padding:20px; border:1px solid var(--border,#d6d6d6); border-radius:16px; background:var(--panel,#fff); color:inherit; overflow:auto; }
+.product-camera::backdrop { background:rgba(0,0,0,.7); }
+.product-camera[open] { display:flex; flex-direction:column; gap:12px; }
+.product-camera .modalhead { margin:0; }
+.product-camera p { margin:0; }
+.product-camera video { display:block; width:100%; min-height:120px; max-height:50dvh; aspect-ratio:4/3; object-fit:contain; border-radius:12px; background:#111; }
+.product-camera-actions { display:flex; flex-wrap:wrap; gap:10px; justify-content:flex-end; }
+.product-camera-actions button { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+@media(max-width:500px){ .product-camera { padding:14px; } .product-camera .modalhead h2 { font-size:18px; } .product-camera-actions button { flex:1 1 120px; } }

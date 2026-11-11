@@ -12,9 +12,12 @@ import {
   Boxes,
   ScanLine,
   Barcode,
+  ShoppingCart,
 } from "lucide-react";
 import "./style.css";
 import tvgLogo from "./assets/logo-tvg.png";
+import { Sales, getPendingSale } from "./Sales";
+import { SaleError, type Sale, type SaleRequest } from "./sales-model";
 const BarcodeLabel = lazy(() =>
   import("./BarcodeLabel").then((m) => ({ default: m.BarcodeLabel })),
 );
@@ -24,6 +27,7 @@ const ScanProduct = lazy(() =>
 import {
   DEFAULT_SHEETS_ENDPOINT,
   sheetsRequest,
+  submitSale,
   type Product,
   type Connection,
 } from "./sheets";
@@ -58,7 +62,12 @@ function App() {
   const [scanning, setScanning] = useState<false | "lookup" | "capture">(false);
   const [label, setLabel] = useState<Product | null>(null);
   const [draft, setDraft] = useState<Product | null>(null);
-  const [view, setView] = useState("catalog");
+  const [view, setView] = useState(() =>
+    getPendingSale() ? "sell" : "catalog",
+  );
+  const [salesVisited, setSalesVisited] = useState(() => !!getPendingSale());
+  const [salePending, setSalePending] = useState(() => !!getPendingSale());
+  const [sales, setSales] = useState<Sale[]>([]);
   const [notice, setNotice] = useState("");
   const [upload, setUpload] = useState(false);
   const [connection, setConnection] = useState<Connection | null>(null);
@@ -66,7 +75,8 @@ function App() {
   const [syncError, setSyncError] = useState(false);
   const pending = useRef(false);
   const interactionOpen = useRef(false);
-  interactionOpen.current = !!draft || !!scanning || !!label;
+  interactionOpen.current =
+    !!draft || !!scanning || !!label || (salePending && !!connection);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
   async function refresh() {
     if (pending.current || interactionOpen.current) return;
@@ -78,10 +88,12 @@ function App() {
         "read",
       );
       setProducts(data.products);
+      setSales(data.sales);
       setConnection({
         url: DEFAULT_SHEETS_ENDPOINT,
         version: data.version,
         supportsCost: data.supportsCost,
+        supportsSales: data.supportsSales,
       });
       setSyncError(false);
       setError("");
@@ -107,8 +119,44 @@ function App() {
       document.removeEventListener("visibilitychange", update);
     };
   }, []);
+  async function confirmSale(request: SaleRequest): Promise<Sale> {
+    if (syncError)
+      throw new SaleError(
+        "Actualizá el catálogo antes de confirmar una venta.",
+        false,
+      );
+    if (pending.current || busy || !connection)
+      throw new SaleError(
+        "Esperá a que el catálogo termine de sincronizar antes de reintentar la venta.",
+        true,
+      );
+    pending.current = true;
+    setBusy(true);
+    try {
+      const result = await submitSale(connection, request);
+      setProducts(result.snapshot.products);
+      setSales(result.snapshot.sales);
+      setConnection({
+        ...connection,
+        version: result.snapshot.version,
+        supportsCost: result.snapshot.supportsCost,
+        supportsSales: result.snapshot.supportsSales,
+      });
+      return result.sale;
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
   async function persist(next: Product[]) {
-    if (pending.current || busy || syncError || !connection) return false;
+    if (salePending) {
+      setError(
+        "Hay una venta pendiente de confirmación. Volvé a Vender y reintentá esa operación antes de modificar el catálogo.",
+      );
+      return false;
+    }
+    if (pending.current || busy || syncError || salePending || !connection)
+      return false;
     if (!connection.supportsCost && next.some((p) => p.cost !== undefined)) {
       setError(
         "Para guardar precios de costo, actualizá Código.gs y publicá una nueva versión de la implementación. Los cambios del formulario se conservaron.",
@@ -125,10 +173,12 @@ function App() {
         next,
       );
       setProducts(data.products);
+      setSales(data.sales);
       setConnection({
         ...connection,
         version: data.version,
         supportsCost: data.supportsCost,
+        supportsSales: data.supportsSales,
       });
       setError("");
       return true;
@@ -338,6 +388,17 @@ function App() {
           <Boxes size={19} />
           Catálogo <span className="count">{products.length}</span>
         </button>
+        <button
+          className={view === "sell" ? "nav selected" : "nav"}
+          disabled={busy}
+          onClick={() => {
+            setSalesVisited(true);
+            setView("sell");
+          }}
+        >
+          <ShoppingCart size={19} />
+          Vender
+        </button>
         <div className="local">
           <i />{" "}
           {connection
@@ -351,7 +412,12 @@ function App() {
       <main>
         <header>
           <span>
-            Mi negocio <b>/</b> {view === "catalog" ? "Catálogo" : "Resumen"}
+            Mi negocio <b>/</b>{" "}
+            {view === "sell"
+              ? "Vender"
+              : view === "catalog"
+                ? "Catálogo"
+                : "Resumen"}
           </span>
           <a
             className="header-brand"
@@ -366,315 +432,375 @@ function App() {
             />
           </a>
         </header>
-        <section>
-          <div className="syncbar">
-            <span>
-              {busy
-                ? "Sincronizando…"
-                : connection
-                  ? "Google Sheets · actualización automática cada 1 minuto"
-                  : "Esperando conexión con Google Sheets"}
-            </span>
-            <button disabled={busy || !!draft} onClick={() => void refresh()}>
-              Actualizar ahora
-            </button>
+        <nav className="mobile-nav" aria-label="Navegación principal">
+          <button
+            className={view === "dashboard" ? "selected" : ""}
+            disabled={busy}
+            onClick={() => setView("dashboard")}
+          >
+            <LayoutDashboard size={15} />
+            Resumen
+          </button>
+          <button
+            className={view === "catalog" ? "selected" : ""}
+            disabled={busy}
+            onClick={() => setView("catalog")}
+          >
+            <Boxes size={15} />
+            Catálogo
+          </button>
+          <button
+            className={view === "sell" ? "selected" : ""}
+            disabled={busy}
+            onClick={() => {
+              setSalesVisited(true);
+              setView("sell");
+            }}
+          >
+            <ShoppingCart size={15} />
+            Vender
+          </button>
+        </nav>
+        {salePending && view !== "sell" && (
+          <div className="sale-info pending-global">
+            Hay una venta pendiente de confirmación.{" "}
+            <button onClick={() => setView("sell")}>Volver a Vender</button>
           </div>
-          {syncError && (
-            <div className="error" role="alert">
-              La última escritura no se pudo confirmar. Cerrá el formulario y
-              actualizá desde Sheets antes de seguir editando.
-            </div>
-          )}
-          <div className="heading">
-            <div>
-              <div className="eyebrow">TU NEGOCIO, EN ORDEN</div>
-              <h1>
-                {view === "catalog"
-                  ? "Catálogo de productos"
-                  : "Resumen del negocio"}
-              </h1>
-              <p>Todo lo que vendés, en un solo lugar.</p>
-            </div>
-            <div className="heading-actions">
-              <button
-                disabled={!connection || busy || syncError}
-                onClick={() => setScanning("lookup")}
-              >
-                <ScanLine size={18} />
-                Escanear producto
-              </button>
-              <button
-                className="primary"
-                disabled={busy || syncError || !connection}
-                onClick={() => {
-                  setError("");
-                  setDraft(empty());
-                }}
-              >
-                <Plus size={18} />
-                Nuevo producto
+        )}
+        {view !== "sell" && (
+          <section>
+            <div className="syncbar">
+              <span>
+                {busy
+                  ? "Sincronizando…"
+                  : connection
+                    ? "Google Sheets · actualización automática cada 1 minuto"
+                    : "Esperando conexión con Google Sheets"}
+              </span>
+              <button disabled={busy || !!draft} onClick={() => void refresh()}>
+                Actualizar ahora
               </button>
             </div>
-          </div>
-          {error && (
-            <div role="alert" className="error">
-              {error}
-            </div>
-          )}
-          {notice && (
-            <div role="status" className="notice">
-              {notice}
-              <button aria-label="Cerrar aviso" onClick={() => setNotice("")}>
-                <X size={16} />
-              </button>
-            </div>
-          )}
-          <div className="stats">
-            <article>
-              <span>
-                Productos en catálogo
-                <Package size={18} />
-              </span>
-              <strong>{products.length}</strong>
-              <small>Tu inventario completo</small>
-            </article>
-            <article>
-              <span>
-                Productos activos
-                <i className="green" />
-              </span>
-              <strong>{products.filter((p) => p.active).length}</strong>
-              <small>Disponibles para vender</small>
-            </article>
-            <article>
-              <span>
-                Stock bajo
-                <i className="orange" />
-              </span>
-              <strong>{products.filter((p) => p.stock <= 5).length}</strong>
-              <small>Con 5 unidades o menos</small>
-            </article>
-            <article>
-              <span>
-                Valor del inventario<span>$</span>
-              </span>
-              <strong className="value">
-                {money(products.reduce((n, p) => n + p.stock * p.price, 0))}
-              </strong>
-              <small>A precio de venta</small>
-            </article>
-            <article className="cost-total">
-              <span>
-                Costo total del inventario<span>$</span>
-              </span>
-              <strong className="value">
-                {money(
-                  products.reduce(
-                    (total, p) =>
-                      total + Math.round((p.cost ?? 0) * 100) * p.stock,
-                    0,
-                  ) / 100,
-                )}
-              </strong>
-              <small>
-                {connection && !connection.supportsCost
-                  ? "Actualizá GS para guardar costos"
-                  : `${missingCosts} ${missingCosts === 1 ? "producto" : "productos"} en stock sin costo cargado`}
-              </small>
-              <small>Costo unitario × unidades en stock</small>
-            </article>
-          </div>
-          <div className="panel">
-            <div className="paneltitle">
-              <h2>
-                {view === "catalog"
-                  ? "Todos los productos"
-                  : "Inventario actual"}{" "}
-                <span>{products.length}</span>
-              </h2>
-              <button onClick={csv}>
-                <Download size={16} />
-                Exportar CSV
-              </button>
-            </div>
-            <div className="filters">
-              <label className="search">
-                <Search size={18} />
-                <input
-                  aria-label="Buscar productos"
-                  placeholder="Buscar por nombre, SKU, color, talle o tipo…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </label>
-              <select
-                aria-label="Categoría"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="">Todas las categorías</option>
-                {[...new Set(products.map((p) => p.category))]
-                  .sort()
-                  .map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-              </select>
-              <select
-                aria-label="Estado"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="">Todos los estados</option>
-                <option value="active">Activos</option>
-                <option value="inactive">Inactivos</option>
-                <option value="low">Stock bajo</option>
-              </select>
-            </div>
-            {filtered.length ? (
-              <div className="tablewrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>PRODUCTO</th>
-                      <th>CATEGORÍA</th>
-                      <th>PRECIO DE VENTA</th>
-                      <th>COSTO UNITARIO</th>
-                      <th>STOCK</th>
-                      <th>ESTADO</th>
-                      <th>ACCIONES</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((p) => (
-                      <tr key={p.id}>
-                        <td>
-                          <div className="product">
-                            {p.image ? (
-                              <img src={p.image} alt="" />
-                            ) : (
-                              <span className="placeholder">
-                                <Package size={23} />
-                              </span>
-                            )}
-                            <div>
-                              <b>{p.name}</b>
-                              <small>{p.sku}</small>
-                              {(p.color || p.size || p.productType) && (
-                                <small className="attributes">
-                                  {[
-                                    p.productType,
-                                    p.color,
-                                    p.size && `Talle ${p.size}`,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" · ")}
-                                </small>
-                              )}
-                              {p.description && (
-                                <small className="description">
-                                  {p.description}
-                                </small>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td>{p.category}</td>
-                        <td className="price">{money(p.price)}</td>
-                        <td className="price">
-                          {p.cost === undefined ? (
-                            <span className="cost-missing">Sin cargar</span>
-                          ) : (
-                            money(p.cost)
-                          )}
-                        </td>
-                        <td>
-                          <span
-                            className={p.stock <= 5 ? "stock low" : "stock"}
-                          >
-                            {p.stock} unidades
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={p.active ? "badge" : "badge inactive"}
-                          >
-                            {p.active ? "Activo" : "Inactivo"}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="actions">
-                            <button
-                              aria-label={"Código de barras de " + p.name}
-                              onClick={() => setLabel(p)}
-                            >
-                              <Barcode size={18} />
-                            </button>
-                            <button
-                              aria-label={"Editar " + p.name}
-                              disabled={busy || syncError || !connection}
-                              onClick={() => {
-                                setError("");
-                                setDraft({ ...p });
-                              }}
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              aria-label={"Eliminar " + p.name}
-                              disabled={busy || syncError || !connection}
-                              onClick={() => void remove(p)}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {syncError && (
+              <div className="error" role="alert">
+                La última escritura no se pudo confirmar. Cerrá el formulario y
+                actualizá desde Sheets antes de seguir editando.
               </div>
-            ) : (
-              <div className="empty">
-                <span>
-                  <Package size={36} />
-                </span>
-                <h3>
-                  {products.length
-                    ? "No encontramos productos"
-                    : "Tu catálogo empieza acá"}
-                </h3>
-                <p>
-                  {products.length
-                    ? "Probá otra búsqueda o cambiá los filtros."
-                    : "Agregá tu primer producto y empezá a organizar tu negocio."}
-                </p>
+            )}
+            <div className="heading">
+              <div>
+                <div className="eyebrow">TU NEGOCIO, EN ORDEN</div>
+                <h1>
+                  {view === "catalog"
+                    ? "Catálogo de productos"
+                    : "Resumen del negocio"}
+                </h1>
+                <p>Todo lo que vendés, en un solo lugar.</p>
+              </div>
+              <div className="heading-actions">
                 <button
-                  disabled={busy || syncError || !connection}
+                  disabled={!connection || busy || syncError}
+                  onClick={() => setScanning("lookup")}
+                >
+                  <ScanLine size={18} />
+                  Escanear producto
+                </button>
+                <button
+                  className="primary"
+                  disabled={busy || syncError || salePending || !connection}
                   onClick={() => {
-                    if (products.length) {
-                      setQuery("");
-                      setCategory("");
-                      setStatus("");
-                    } else setDraft(empty());
+                    setError("");
+                    setDraft(empty());
                   }}
                 >
-                  {products.length
-                    ? "Limpiar filtros"
-                    : "+ Agregar mi primer producto"}
+                  <Plus size={18} />
+                  Nuevo producto
+                </button>
+              </div>
+            </div>
+            {error && (
+              <div role="alert" className="error">
+                {error}
+              </div>
+            )}
+            {notice && (
+              <div role="status" className="notice">
+                {notice}
+                <button aria-label="Cerrar aviso" onClick={() => setNotice("")}>
+                  <X size={16} />
                 </button>
               </div>
             )}
-            <footer>
-              {filtered.length} de {products.length} productos{" "}
-              <span>
-                {connection ? "Datos en Google Sheets" : "Esperando conexión"}
-              </span>
-            </footer>
+            <div className="stats">
+              <article>
+                <span>
+                  Productos en catálogo
+                  <Package size={18} />
+                </span>
+                <strong>{products.length}</strong>
+                <small>Tu inventario completo</small>
+              </article>
+              <article>
+                <span>
+                  Productos activos
+                  <i className="green" />
+                </span>
+                <strong>{products.filter((p) => p.active).length}</strong>
+                <small>Disponibles para vender</small>
+              </article>
+              <article>
+                <span>
+                  Stock bajo
+                  <i className="orange" />
+                </span>
+                <strong>{products.filter((p) => p.stock <= 5).length}</strong>
+                <small>Con 5 unidades o menos</small>
+              </article>
+              <article>
+                <span>
+                  Valor del inventario<span>$</span>
+                </span>
+                <strong className="value">
+                  {money(products.reduce((n, p) => n + p.stock * p.price, 0))}
+                </strong>
+                <small>A precio de venta</small>
+              </article>
+              <article className="cost-total">
+                <span>
+                  Costo total del inventario<span>$</span>
+                </span>
+                <strong className="value">
+                  {money(
+                    products.reduce(
+                      (total, p) =>
+                        total + Math.round((p.cost ?? 0) * 100) * p.stock,
+                      0,
+                    ) / 100,
+                  )}
+                </strong>
+                <small>
+                  {connection && !connection.supportsCost
+                    ? "Actualizá GS para guardar costos"
+                    : `${missingCosts} ${missingCosts === 1 ? "producto" : "productos"} en stock sin costo cargado`}
+                </small>
+                <small>Costo unitario × unidades en stock</small>
+              </article>
+            </div>
+            <div className="panel">
+              <div className="paneltitle">
+                <h2>
+                  {view === "catalog"
+                    ? "Todos los productos"
+                    : "Inventario actual"}{" "}
+                  <span>{products.length}</span>
+                </h2>
+                <button onClick={csv}>
+                  <Download size={16} />
+                  Exportar CSV
+                </button>
+              </div>
+              <div className="filters">
+                <label className="search">
+                  <Search size={18} />
+                  <input
+                    aria-label="Buscar productos"
+                    placeholder="Buscar por nombre, SKU, color, talle o tipo…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </label>
+                <select
+                  aria-label="Categoría"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  <option value="">Todas las categorías</option>
+                  {[...new Set(products.map((p) => p.category))]
+                    .sort()
+                    .map((c) => (
+                      <option key={c}>{c}</option>
+                    ))}
+                </select>
+                <select
+                  aria-label="Estado"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                >
+                  <option value="">Todos los estados</option>
+                  <option value="active">Activos</option>
+                  <option value="inactive">Inactivos</option>
+                  <option value="low">Stock bajo</option>
+                </select>
+              </div>
+              {filtered.length ? (
+                <div className="tablewrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>PRODUCTO</th>
+                        <th>CATEGORÍA</th>
+                        <th>PRECIO DE VENTA</th>
+                        <th>COSTO UNITARIO</th>
+                        <th>STOCK</th>
+                        <th>ESTADO</th>
+                        <th>ACCIONES</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <div className="product">
+                              {p.image ? (
+                                <img src={p.image} alt="" />
+                              ) : (
+                                <span className="placeholder">
+                                  <Package size={23} />
+                                </span>
+                              )}
+                              <div>
+                                <b>{p.name}</b>
+                                <small>{p.sku}</small>
+                                {(p.color || p.size || p.productType) && (
+                                  <small className="attributes">
+                                    {[
+                                      p.productType,
+                                      p.color,
+                                      p.size && `Talle ${p.size}`,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </small>
+                                )}
+                                {p.description && (
+                                  <small className="description">
+                                    {p.description}
+                                  </small>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td>{p.category}</td>
+                          <td className="price">{money(p.price)}</td>
+                          <td className="price">
+                            {p.cost === undefined ? (
+                              <span className="cost-missing">Sin cargar</span>
+                            ) : (
+                              money(p.cost)
+                            )}
+                          </td>
+                          <td>
+                            <span
+                              className={p.stock <= 5 ? "stock low" : "stock"}
+                            >
+                              {p.stock} unidades
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={p.active ? "badge" : "badge inactive"}
+                            >
+                              {p.active ? "Activo" : "Inactivo"}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="actions">
+                              <button
+                                aria-label={"Código de barras de " + p.name}
+                                onClick={() => setLabel(p)}
+                              >
+                                <Barcode size={18} />
+                              </button>
+                              <button
+                                aria-label={"Editar " + p.name}
+                                disabled={
+                                  busy ||
+                                  syncError ||
+                                  salePending ||
+                                  !connection
+                                }
+                                onClick={() => {
+                                  setError("");
+                                  setDraft({ ...p });
+                                }}
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                aria-label={"Eliminar " + p.name}
+                                disabled={
+                                  busy ||
+                                  syncError ||
+                                  salePending ||
+                                  !connection
+                                }
+                                onClick={() => void remove(p)}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="empty">
+                  <span>
+                    <Package size={36} />
+                  </span>
+                  <h3>
+                    {products.length
+                      ? "No encontramos productos"
+                      : "Tu catálogo empieza acá"}
+                  </h3>
+                  <p>
+                    {products.length
+                      ? "Probá otra búsqueda o cambiá los filtros."
+                      : "Agregá tu primer producto y empezá a organizar tu negocio."}
+                  </p>
+                  <button
+                    disabled={busy || syncError || salePending || !connection}
+                    onClick={() => {
+                      if (products.length) {
+                        setQuery("");
+                        setCategory("");
+                        setStatus("");
+                      } else setDraft(empty());
+                    }}
+                  >
+                    {products.length
+                      ? "Limpiar filtros"
+                      : "+ Agregar mi primer producto"}
+                  </button>
+                </div>
+              )}
+              <footer>
+                {filtered.length} de {products.length} productos{" "}
+                <span>
+                  {connection ? "Datos en Google Sheets" : "Esperando conexión"}
+                </span>
+              </footer>
+            </div>
+            <div className="footnote">
+              TVG Catalog Manager <span>Hecho para acompañar tu negocio.</span>
+            </div>
+          </section>
+        )}
+        {salesVisited && (
+          <div hidden={view !== "sell"}>
+            <Sales
+              products={products}
+              sales={sales}
+              connection={connection}
+              busy={busy}
+              onConfirm={confirmSale}
+              onRefresh={refresh}
+              onPendingChange={setSalePending}
+            />
           </div>
-          <div className="footnote">
-            TVG Catalog Manager <span>Hecho para acompañar tu negocio.</span>
-          </div>
-        </section>
+        )}
       </main>
       {draft && (
         <div
@@ -910,7 +1036,9 @@ function App() {
               </button>
               <button
                 className="primary"
-                disabled={upload || busy || syncError || !connection}
+                disabled={
+                  upload || busy || syncError || salePending || !connection
+                }
                 type="submit"
               >
                 {busy

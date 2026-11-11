@@ -888,3 +888,426 @@ textarea:focus-visible {
     grid-column: 1/-1;
   }
 }
+.mobile-nav {
+  display: none;
+}
+.sale-info {
+  background: #edf5f1;
+  color: #426a55;
+  border: 1px solid #dbe9df;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.65;
+  margin: 16px 0;
+}
+.pending-global {
+  margin: 20px 40px;
+}
+.sale-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 420px);
+  gap: 22px;
+  align-items: start;
+}
+.sale-checkout h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sale-search {
+  display: block;
+  font-size: 12px;
+  color: #6f8578;
+  margin: 0 20px 16px;
+}
+.sale-search input,
+.sale-fields input {
+  display: block;
+  width: 100%;
+  border: 1px solid #dce5df;
+  border-radius: 6px;
+  padding: 11px;
+  margin-top: 7px;
+  font-size: 13px;
+}
+.sale-product-list {
+  max-height: 650px;
+  overflow: auto;
+}
+.sale-product {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 20px;
+  border-top: 1px solid #edf1ee;
+}
+.sale-product > div {
+  flex: 1;
+  min-width: 0;
+}
+.sale-product b,
+.cart-line-title b {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.sale-product small,
+.cart-line-title small {
+  font-size: 10px;
+  color: #88998d;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.sale-product strong {
+  font-size: 13px;
+  color: #345e45;
+  white-space: nowrap;
+}
+.sale-product > button {
+  padding: 8px;
+}
+.sale-empty {
+  padding: 25px 20px;
+  font-size: 12px;
+}
+.cart-lines {
+  padding: 0 20px;
+}
+.cart-lines article {
+  border-bottom: 1px solid #e7ede9;
+  padding: 16px 0;
+}
+.cart-line-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.cart-line-title button {
+  border: 0;
+  padding: 5px;
+}
+.cart-line-bottom {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+.cart-line-bottom > span {
+  font-size: 10px;
+  color: #8b9a8f;
+}
+.cart-line-bottom > strong {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  border: 1px solid #dde7df;
+  border-radius: 6px;
+}
+.quantity-controls button {
+  border: 0;
+  padding: 7px 5px;
+}
+.quantity-controls input {
+  width: 38px;
+  border: 0;
+  text-align: center;
+  font-size: 12px;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.quantity-controls input::-webkit-inner-spin-button {
+  display: none;
+}
+.sale-fields {
+  padding: 5px 20px 15px;
+}
+.sale-fields label {
+  display: block;
+  font-size: 11px;
+  color: #68806f;
+  margin-top: 14px;
+}
+.sale-fields select {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  font-size: 13px;
+}
+.sale-fields p {
+  font-size: 12px;
+  margin-top: 12px;
+}
+.sale-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px;
+  background: #eff7f2;
+  color: #305d43;
+  font-size: 15px;
+}
+.sale-total strong {
+  font-size: 24px;
+  overflow-wrap: anywhere;
+}
+.receipt-note {
+  padding: 15px 20px;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.confirm-sale {
+  display: flex;
+  width: calc(100% - 40px);
+  margin: 0 20px 22px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.sale-history {
+  margin-top: 26px;
+}
+.sale-history .paneltitle small {
+  font-size: 10px;
+  color: #95a398;
+}
+.sale-checkout > .error {
+  margin: 10px 20px;
+}
+.receipt-dialog {
+  width: 800px;
+  max-width: 100%;
+  max-height: 94vh;
+  overflow: auto;
+  background: white;
+  border-radius: 10px;
+  padding: 22px;
+}
+.receipt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.receipt-toolbar h2 {
+  margin-right: auto;
+}
+.receipt-print {
+  color: #25392d;
+  padding: 20px 5px;
+  background: white;
+}
+.receipt-brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid #dce5df;
+  padding-bottom: 20px;
+}
+.receipt-brand img {
+  width: 180px;
+  height: auto;
+  max-width: 45%;
+}
+.receipt-brand h2 {
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+.receipt-brand strong {
+  font-size: 15px;
+}
+.receipt-brand p {
+  font-size: 11px;
+  margin-top: 8px;
+}
+.internal-receipt {
+  text-align: center;
+  background: #f4f6f4;
+  color: #65756a;
+  font-size: 11px;
+  padding: 10px;
+  margin: 15px 0;
+}
+.receipt-customer {
+  font-size: 12px;
+  margin: 20px 0;
+}
+.receipt-customer > div {
+  display: flex;
+  gap: 15px;
+  margin: 10px 0;
+}
+.receipt-customer dt {
+  min-width: 100px;
+  color: #829286;
+}
+.receipt-customer dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.receipt-items {
+  white-space: normal;
+}
+.receipt-items th,
+.receipt-items td {
+  padding: 12px 8px;
+  font-size: 11px;
+  color: #405548;
+}
+.receipt-items td:first-child {
+  width: 48%;
+  overflow-wrap: anywhere;
+}
+.receipt-items small {
+  font-size: 10px;
+  margin-top: 6px;
+  color: #88988c;
+}
+.receipt-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 35px;
+  border-top: 1px solid #dce5df;
+  padding: 20px 10px;
+  font-size: 16px;
+}
+.receipt-total strong {
+  font-size: 25px;
+}
+.cash-details {
+  text-align: right;
+}
+.cash-details p {
+  font-size: 11px;
+}
+.receipt-thanks {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 12px;
+}
+@media (max-width: 1000px) {
+  .sale-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sale-product-list {
+    max-height: 400px;
+  }
+}
+@media (max-width: 760px) {
+  .mobile-nav {
+    display: flex;
+    gap: 7px;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e4ebe6;
+  }
+  .mobile-nav button {
+    flex: 1;
+    font-size: 11px;
+    padding: 10px 6px;
+  }
+  .pending-global {
+    margin: 16px;
+  }
+  .sale-product {
+    padding: 14px;
+  }
+  .sale-search {
+    margin: 0 14px 16px;
+  }
+  .sale-products .paneltitle {
+    gap: 12px;
+  }
+  .sale-products .paneltitle button {
+    font-size: 10px;
+    padding: 8px;
+  }
+  .receipt-dialog {
+    padding: 16px;
+  }
+  .receipt-toolbar {
+    flex-wrap: wrap;
+  }
+  .receipt-toolbar h2 {
+    font-size: 13px;
+  }
+  .receipt-toolbar button {
+    font-size: 10px;
+    padding: 8px;
+  }
+  .receipt-brand {
+    gap: 12px;
+  }
+  .receipt-brand img {
+    width: 140px;
+  }
+  .receipt-brand h2,
+  .receipt-brand strong {
+    font-size: 12px;
+  }
+  .receipt-items th,
+  .receipt-items td {
+    font-size: 9px;
+    padding: 9px 4px;
+  }
+  .receipt-total strong {
+    font-size: 21px;
+  }
+  .cart-line-bottom {
+    gap: 7px;
+  }
+  .sale-history .paneltitle {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+@media print {
+  .receipt-overlay,
+  .receipt-overlay * {
+    visibility: visible !important;
+  }
+  .receipt-overlay {
+    position: static;
+    display: block;
+    background: white;
+    padding: 0;
+    backdrop-filter: none;
+  }
+  .receipt-dialog {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+    border-radius: 0;
+  }
+  .receipt-toolbar {
+    display: none !important;
+  }
+  .receipt-print {
+    padding: 0;
+    color: black;
+  }
+  .receipt-items {
+    width: 100%;
+    white-space: normal;
+  }
+  .receipt-items tr {
+    break-inside: avoid;
+  }
+  .receipt-total {
+    break-inside: avoid;
+  }
+  .internal-receipt {
+    border: 1px solid #bbb;
+    background: white;
+  }
+  .mobile-nav {
+    display: none !important;
+  }
+}

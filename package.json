@@ -10,7 +10,8 @@
     "test": "node --test tests/*.test.cjs",
     "test:browser": "node tests/browser/barcodes.cjs",
     "test:install": "node tests/browser/install.cjs",
-    "test:costs": "node tests/browser/costs.cjs"
+    "test:costs": "node tests/browser/costs.cjs",
+    "test:sales": "node tests/browser/sales.cjs"
   },
   "dependencies": {
     "@zxing/browser": "^0.2.1",

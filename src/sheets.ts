@@ -1,3 +1,4 @@
+import { SaleError, validSale, type Sale } from "./sales-model";
 export type Product = {
   id: string;
   name: string;
@@ -17,11 +18,14 @@ export type Connection = {
   url: string;
   version: string;
   supportsCost?: boolean;
+  supportsSales?: boolean;
 };
 export type Snapshot = {
   products: Product[];
   version: string;
   supportsCost: boolean;
+  supportsSales: boolean;
+  sales: Sale[];
 };
 export const DEFAULT_SHEETS_ENDPOINT =
   "https://script.google.com/macros/s/AKfycbxi6cSpbXtnLBpkPpxtO5S5yxkGKQ7tNNuD5Z9mXTFD-7LRftixceESDq6Bs2R9P7s/exec";
@@ -115,20 +119,27 @@ export async function sheetsRequest(
         );
       throw Error(data.error || "No se pudo sincronizar.");
     }
-    if (data.schema !== 2 && data.schema !== 3)
+    if (![2, 3, 4].includes(data.schema))
       throw Error(
         "Actualizá el Código.gs y su implementación a la versión con descripción, color, talle y tipo antes de continuar.",
       );
     if (!validProducts(data.products) || typeof data.version !== "string")
       throw Error("Google Sheets devolvió datos inválidos.");
-    if (action === "write" && hasCosts && data.schema !== 3)
+    if (action === "write" && hasCosts && data.schema < 3)
       throw Error(
         "La implementación de Sheets no confirmó los costos. Actualizá Código.gs y volvé a leer el catálogo antes de continuar.",
       );
     return {
       products: data.products,
       version: data.version,
-      supportsCost: data.schema === 3,
+      supportsCost: data.schema >= 3,
+      supportsSales: data.schema === 4,
+      sales:
+        data.schema === 4 &&
+        Array.isArray(data.sales) &&
+        data.sales.every(validSale)
+          ? data.sales
+          : [],
     };
   } catch (e) {
     if (e instanceof TypeError || e instanceof DOMException)
@@ -138,5 +149,75 @@ export async function sheetsRequest(
     throw e;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+export async function submitSale(
+  connection: Connection,
+  request: import("./sales-model").SaleRequest,
+): Promise<{ snapshot: Snapshot; sale: import("./sales-model").Sale }> {
+  if (!connection.supportsSales)
+    throw new SaleError(
+      "Para confirmar ventas, actualizá Código.gs y su implementación. El carrito se conserva.",
+      false,
+    );
+  const url = new URL(connection.url);
+  if (
+    url.origin !== "https://script.google.com" ||
+    !/^\/macros\/s\/[\w-]+\/exec$/.test(url.pathname)
+  )
+    throw new SaleError("URL de Google Sheets inválida.", false);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+  try {
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      credentials: "omit",
+      redirect: "follow",
+      signal: controller.signal,
+      body: JSON.stringify({ ...request, action: "sale" }),
+    });
+    if (!response.ok)
+      throw new SaleError(
+        "No se pudo confirmar la venta. Reintentá la confirmación para consultar la misma operación.",
+        true,
+      );
+    const data = await response.json();
+    if (!data.ok)
+      throw new SaleError(
+        data.error || "No se pudo confirmar la venta.",
+        !["REJECTED", "CONFLICT"].includes(data.code),
+      );
+    if (
+      data.schema !== 4 ||
+      !validProducts(data.products) ||
+      typeof data.version !== "string" ||
+      !validSale(data.sale) ||
+      !Array.isArray(data.sales) ||
+      !data.sales.every(validSale)
+    )
+      throw new SaleError(
+        "La respuesta de venta no se pudo verificar. Reintentá la confirmación de la misma operación.",
+        true,
+      );
+    return {
+      sale: data.sale,
+      snapshot: {
+        products: data.products,
+        version: data.version,
+        supportsCost: true,
+        supportsSales: true,
+        sales: data.sales,
+      },
+    };
+  } catch (e) {
+    if (e instanceof SaleError) throw e;
+    throw new SaleError(
+      "No se recibió confirmación. La venta podría haberse guardado: reintentá la misma operación para evitar duplicarla.",
+      true,
+    );
+  } finally {
+    clearTimeout(timeout);
   }
 }

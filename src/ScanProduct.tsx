@@ -10,7 +10,7 @@ export function ScanProduct({
   mode = "lookup",
 }: {
   onFind: (code: string) => boolean | string;
-  mode?: "lookup" | "capture";
+  mode?: "lookup" | "capture" | "sale";
   onClose: () => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -122,18 +122,22 @@ export function ScanProduct({
       >
         <div className="modalhead">
           <h2 id="scan-title">
-            {mode === "capture"
-              ? "Escanear código de barras"
-              : "Escanear producto"}
+            {mode === "sale"
+              ? "Escanear para vender"
+              : mode === "capture"
+                ? "Escanear código de barras"
+                : "Escanear producto"}
           </h2>
           <button aria-label="Cerrar escáner" onClick={onClose}>
             <X />
           </button>
         </div>
         <p>
-          {mode === "capture"
-            ? "Apuntá al código que ya tiene el producto. Lo copiaremos al SKU y podrás completar la descripción, el precio y los demás datos."
-            : "Apuntá la cámara al código de barras de la etiqueta. Al reconocerlo, se abrirá el producto."}
+          {mode === "sale"
+            ? "Escaneá el código del producto para agregar una unidad al carrito."
+            : mode === "capture"
+              ? "Apuntá al código que ya tiene el producto. Lo copiaremos al SKU y podrás completar la descripción, el precio y los demás datos."
+              : "Apuntá la cámara al código de barras de la etiqueta. Al reconocerlo, se abrirá el producto."}
         </p>
         <div className="scan-view">
           <video
@@ -177,7 +181,11 @@ export function ScanProduct({
             />
           </label>
           <button className="primary" type="submit">
-            {mode === "capture" ? "Usar este código" : "Buscar producto"}
+            {mode === "sale"
+              ? "Agregar al carrito"
+              : mode === "capture"
+                ? "Usar este código"
+                : "Buscar producto"}
           </button>
         </form>
       </div>

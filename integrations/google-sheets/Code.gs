@@ -23,7 +23,7 @@ function doPost(e) {
     if (!text || text.length > 8 * 1024 * 1024)
       throw new Error("Solicitud vacía o demasiado grande (máximo 8 MB).");
     const body = JSON.parse(text);
-    if (body.action !== "read" && body.action !== "write")
+    if (!["read", "write", "sale"].includes(body.action))
       throw new Error("Operación inválida.");
     lock = LockService.getScriptLock();
     if (!lock.tryLock(20000))
@@ -36,6 +36,9 @@ function doPost(e) {
       sheet.setFrozenRows(1);
     }
     let products = tvgRead(sheet);
+    let sales = tvgReadSales(sheet);
+    if (body.action === "sale")
+      return tvgJson(tvgSell(sheet, products, sales, body));
     let version = tvgVersion(products);
     if (body.action === "write") {
       if (body.version !== version)
@@ -52,15 +55,17 @@ function doPost(e) {
       ok: true,
       products: products,
       version: version,
-      schema: 3,
+      schema: 4,
+      sales: sales.slice(-100).reverse(),
     });
   } catch (error) {
     const known = error && error.message;
     // Do not expose Google account or authorization details to unauthenticated clients.
     const allowed =
-      /^(Solicitud|Falta configurar|Clave del|Operación|El catálogo|Los datos|Hay |Producto|La pestaña)/;
+      /^(Solicitud|Falta configurar|Clave del|Operación|El catálogo|Los datos|Hay |Producto|La pestaña|La venta|Las ventas|El total|El importe|El cliente|El medio|El pago|No hay|No alcanza|El producto|Demasiad|La cantidad|El identificador)/;
     return tvgJson({
       ok: false,
+      code: (error && error.tvgCode) || "UNCERTAIN",
       error: allowed.test(known || "")
         ? known
         : "No se pudo acceder al catálogo. Revisá los permisos y la ejecución de Apps Script.",
@@ -154,7 +159,7 @@ function tvgRead(sheet) {
   const products = values
     .slice(1)
     .filter(function (row) {
-      return row.some(function (cell) {
+      return row.slice(0, 7).some(function (cell) {
         return cell !== "";
       });
     })
@@ -191,18 +196,26 @@ function tvgText(value) {
   // Leading apostrophe prevents formulas; Sheets returns the original literal text on read.
   return /^[=+@\-\t\r']/.test(value) ? "'" + value : value;
 }
-function tvgWrite(sheet, products) {
+function tvgWrite(sheet, products, sales) {
+  if (sales === undefined) sales = tvgReadSales(sheet);
   const imageCount = Math.max(
     1,
     ...products.map(function (p) {
       return Math.ceil(p.image.length / 40000);
     }),
   );
-  const columns = Math.max(7 + imageCount + 5, sheet.getLastColumn());
-  const imageColumns = columns - 12;
+  const columns = Math.max(7 + imageCount + 6, sheet.getLastColumn());
+  const imageColumns = columns - 13;
   const headers = TVG_HEADERS.slice(0, 7);
   for (let i = 1; i <= imageColumns; i++) headers.push("Imagen " + i);
-  headers.push("Descripcion", "Color", "Talle", "Tipo", "Costo ARS");
+  headers.push(
+    "Descripcion",
+    "Color",
+    "Talle",
+    "Tipo",
+    "Costo ARS",
+    "Ventas JSON",
+  );
   const rows = products.map(function (p) {
     const chunks = p.image.match(/.{1,40000}/g) || [""];
     while (chunks.length < imageColumns) chunks.push("");
@@ -222,11 +235,21 @@ function tvgWrite(sheet, products) {
       p.cost === undefined ? "" : p.cost,
     ]);
   });
-  const rowCount = Math.max(rows.length + 1, sheet.getLastRow());
+  const rowCount = Math.max(
+    rows.length + 1,
+    sales.length + 1,
+    sheet.getLastRow(),
+  );
   const data = [headers].concat(rows);
   while (data.length < rowCount) data.push([]);
   data.forEach(function (row) {
     while (row.length < columns) row.push("");
+  });
+  sales.forEach(function (sale, i) {
+    const text = JSON.stringify(sale);
+    if (text.length > 40000)
+      tvgReject("La venta tiene demasiados detalles para guardarla.");
+    data[i + 1][columns - 1] = text;
   });
   if (columns > sheet.getMaxColumns())
     sheet.insertColumnsAfter(
@@ -237,4 +260,196 @@ function tvgWrite(sheet, products) {
     sheet.insertRowsAfter(sheet.getMaxRows(), rowCount - sheet.getMaxRows());
   // One range write replaces the snapshot, including blank rows for removed products.
   sheet.getRange(1, 1, rowCount, columns).setValues(data);
+}
+
+function tvgReject(message, code) {
+  const error = new Error(message);
+  error.tvgCode = code || "REJECTED";
+  throw error;
+}
+function tvgReadSales(sheet) {
+  const values = sheet.getDataRange().getValues();
+  const index = values[0].indexOf("Ventas JSON");
+  if (index < 0) return [];
+  const sales = [];
+  const ids = new Set();
+  const sequences = new Set();
+  values.slice(1).forEach(function (row) {
+    if (row[index] === "" || row[index] === undefined) return;
+    let sale;
+    try {
+      sale = JSON.parse(row[index]);
+    } catch (_) {
+      tvgReject(
+        "Las ventas guardadas tienen un formato inválido. No edites la columna Ventas JSON.",
+      );
+    }
+    if (
+      !sale ||
+      typeof sale.id !== "string" ||
+      !Number.isSafeInteger(sale.sequence) ||
+      sale.sequence < 1 ||
+      typeof sale.number !== "string" ||
+      typeof sale.requestHash !== "string" ||
+      !Array.isArray(sale.items) ||
+      !Number.isFinite(sale.total) ||
+      ids.has(sale.id) ||
+      sequences.has(sale.sequence)
+    )
+      tvgReject("Las ventas guardadas tienen datos inválidos o duplicados.");
+    ids.add(sale.id);
+    sequences.add(sale.sequence);
+    sales.push(sale);
+  });
+  return sales;
+}
+function tvgSell(sheet, products, sales, body) {
+  if (typeof body.id !== "string" || !/^[a-f0-9-]{36}$/i.test(body.id))
+    tvgReject("El identificador de venta es inválido.");
+  if (
+    !Array.isArray(body.items) ||
+    body.items.length < 1 ||
+    body.items.length > 50
+  )
+    tvgReject("La venta debe tener entre 1 y 50 productos diferentes.");
+  if (
+    typeof body.customer !== "string" ||
+    body.customer.length > 120 ||
+    typeof body.document !== "string" ||
+    body.document.length > 40
+  )
+    tvgReject("El cliente tiene datos demasiado largos o inválidos.");
+  if (
+    ["Efectivo", "Transferencia", "Tarjeta", "Otro"].indexOf(
+      body.paymentMethod,
+    ) < 0
+  )
+    tvgReject("El medio de pago es inválido.");
+  if (!Number.isSafeInteger(body.expectedTotal) || body.expectedTotal < 0)
+    tvgReject("El total enviado es inválido.");
+  const normalized = {
+    items: body.items,
+    customer: body.customer.trim(),
+    document: body.document.trim(),
+    paymentMethod: body.paymentMethod,
+    cashReceived:
+      body.paymentMethod === "Efectivo" ? body.cashReceived : undefined,
+    expectedTotal: body.expectedTotal,
+  };
+  const requestHash = tvgVersion(normalized);
+  const previous = sales.find(function (s) {
+    return s.id === body.id;
+  });
+  if (previous) {
+    if (previous.requestHash !== requestHash)
+      tvgReject("El identificador ya pertenece a una venta con otros datos.");
+    return {
+      ok: true,
+      schema: 4,
+      products: products,
+      version: tvgVersion(products),
+      sales: sales.slice(-100).reverse(),
+      sale: previous,
+    };
+  }
+  if (body.version !== tvgVersion(products))
+    tvgReject(
+      "El catálogo cambió en otro dispositivo. Actualizá los productos y revisá el carrito antes de confirmar.",
+      "CONFLICT",
+    );
+  const ids = new Set();
+  let totalCents = 0;
+  const lines = body.items.map(function (item) {
+    if (
+      !item ||
+      typeof item.productId !== "string" ||
+      !Number.isSafeInteger(item.quantity) ||
+      item.quantity < 1 ||
+      ids.has(item.productId)
+    )
+      tvgReject("La cantidad o el producto de la venta es inválido.");
+    ids.add(item.productId);
+    const p = products.find(function (product) {
+      return product.id === item.productId;
+    });
+    if (!p || !p.active)
+      tvgReject("El producto ya no está disponible para vender.");
+    if (item.quantity > p.stock)
+      tvgReject(
+        "No alcanza el stock de " + p.name + ". Disponibles: " + p.stock + ".",
+      );
+    const unitCents = Math.round(p.price * 100);
+    const lineCents = unitCents * item.quantity;
+    if (!Number.isSafeInteger(lineCents) || lineCents < 0)
+      tvgReject("El importe de un producto supera el máximo admitido.");
+    totalCents += lineCents;
+    return {
+      productId: p.id,
+      sku: p.sku,
+      name: p.name,
+      variant: [p.productType, p.color, p.size ? "Talle " + p.size : ""]
+        .filter(Boolean)
+        .join(" · "),
+      quantity: item.quantity,
+      unitPrice: unitCents / 100,
+      total: lineCents / 100,
+    };
+  });
+  if (!Number.isSafeInteger(totalCents) || totalCents !== body.expectedTotal)
+    tvgReject(
+      "El total cambió. Revisá los precios del carrito antes de confirmar.",
+      "CONFLICT",
+    );
+  let paid;
+  let change;
+  if (body.paymentMethod === "Efectivo" && body.cashReceived !== undefined) {
+    paid = body.cashReceived;
+    const cents = Math.round(paid * 100);
+    if (
+      typeof paid !== "number" ||
+      !Number.isFinite(paid) ||
+      !Number.isSafeInteger(cents) ||
+      cents / 100 !== paid ||
+      cents < totalCents
+    )
+      tvgReject(
+        "El pago recibido debe ser igual o mayor al total, con hasta dos decimales.",
+      );
+    change = (cents - totalCents) / 100;
+  }
+  const sequence =
+    sales.reduce(function (max, s) {
+      return Math.max(max, s.sequence);
+    }, 0) + 1;
+  const sale = {
+    id: body.id,
+    number: "TVG-V" + String(sequence).padStart(6, "0"),
+    sequence: sequence,
+    createdAt: new Date().toISOString(),
+    customer: normalized.customer || "Consumidor final",
+    document: normalized.document,
+    paymentMethod: body.paymentMethod,
+    cashReceived: paid,
+    change: change,
+    items: lines,
+    total: totalCents / 100,
+    requestHash: requestHash,
+    receiptType: "internal",
+  };
+  const next = products.map(function (p) {
+    const line = lines.find(function (i) {
+      return i.productId === p.id;
+    });
+    return line ? Object.assign({}, p, { stock: p.stock - line.quantity }) : p;
+  });
+  tvgWrite(sheet, next, sales.concat([sale]));
+  SpreadsheetApp.flush();
+  return {
+    ok: true,
+    schema: 4,
+    products: next,
+    version: tvgVersion(next),
+    sales: sales.concat([sale]).slice(-100).reverse(),
+    sale: sale,
+  };
 }

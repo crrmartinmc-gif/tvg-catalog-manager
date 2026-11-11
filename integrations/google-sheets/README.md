@@ -37,3 +37,13 @@ Actualizá Código.gs y desplegá una nueva versión de la misma implementación
 Actualizá Código.gs y publicá una nueva versión de la implementación existente para habilitar el esquema 3. La app sigue leyendo el esquema 2 y permite guardar los campos anteriores; bloquea el envío de costos a un script que no los soporta para evitar su pérdida. Después de actualizar la implementación, cerrá el formulario y tocá Actualizar ahora antes de cargar costos.
 
 El script incorpora la columna Costo ARS al guardar, sin modificar las demás pestañas. Los productos anteriores quedan sin costo hasta que se complete el dato. Un campo vacío no equivale a cero; cero es un costo válido. Se admiten importes no negativos con hasta dos decimales. El contador calcula la suma de costo unitario por stock de todos los productos, incluidos los inactivos, y avisa cuántos productos con stock no tienen costo. No depende de los filtros de la tabla. Los costos se incluyen en el CSV.
+
+## Ventas y comprobantes internos (esquema 4)
+
+Reemplazá Código.gs por la versión actual y usá Implementar → Administrar implementaciones → lápiz → Nueva versión → Implementar, conservando la URL existente. Después recargá la app o usá Actualizar catálogo.
+
+La nueva operación de venta valida cantidades, disponibilidad, precios y total. Guarda el stock y el comprobante juntos en una sola llamada setValues sobre TVG_Catalogo, bajo el bloqueo del script. La columna Ventas JSON conserva cada venta y su identificador de reintento. No se crean ni modifican otras pestañas. Los guardados normales del catálogo preservan ese historial; sus filas no se interpretan como productos.
+
+El historial conserva los detalles originales del comprobante y la app muestra hasta las 100 operaciones recientes para reimprimir. No borrar ni editar Ventas JSON. Si la app informa una confirmación pendiente, reintentar la misma operación; no crear otra venta para el mismo cobro. La app utiliza un identificador persistente para recuperar la operación sin duplicarla.
+
+Los comprobantes son internos, no facturas fiscales. No se integra ARCA, no se calcula IVA fiscal ni se solicita CAE. El script necesita desplegarse con los permisos del propietario de la planilla como en las versiones anteriores.

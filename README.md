@@ -69,3 +69,15 @@ Con Vite iniciado, `npm run test:install` verifica el intervalo de 60 segundos, 
 Cada producto admite un precio de costo unitario en ARS, separado del precio de venta. El contador Costo total del inventario calcula Σ(costo unitario × unidades en stock), con cálculo en centavos, sin depender de búsquedas o filtros. Incluye productos activos e inactivos. Los productos sin costo se identifican como Sin cargar y el contador avisa cuántos faltan con stock; cero se considera un costo cargado. El dato se guarda en Sheets y se exporta a CSV.
 
 Se necesita actualizar Apps Script al esquema 3 para guardar costos. La app conserva la lectura y edición de los campos anteriores con el esquema 2; no envía costos si el script aún no los soporta. Pruebas del circuito de costos, con Vite iniciado: `npm run test:costs`.
+
+## Vender y emitir comprobantes
+
+La pestaña Vender está disponible en el menú de computadora y celular. Permite buscar o escanear productos, armar un carrito, indicar cantidades, cliente y medio de pago. Calcula el total y, en efectivo, el vuelto cuando se informa el importe recibido. Al confirmar registra la venta y descuenta stock en Google Sheets en una única escritura de rango. Comprueba precios, versión del catálogo y stock en el servidor.
+
+Emite un **comprobante interno**, con número propio, fecha, productos, cantidades y pago. Se puede imprimir o guardar como PDF desde el diálogo de impresión del navegador. **No es una factura fiscal de ARCA y no tiene CAE.** La facturación fiscal necesita una integración y autorización adicionales.
+
+Las últimas 100 ventas se consultan y reimprimen desde la pestaña Vender. El historial completo se conserva en la columna gestionada Ventas JSON de TVG_Catalogo. No modificar manualmente esa columna. Los comprobantes conservan los precios de la venta aunque cambie el catálogo.
+
+Si se pierde la confirmación, la app conserva el identificador de la operación en este navegador y permite reintentar la misma venta, incluso tras recargar, sin descontar stock otra vez. Mientras existe una confirmación pendiente, el carrito queda bloqueado y no se permite modificar el catálogo desde ese navegador. Hace falta almacenamiento local habilitado para conservar esa referencia.
+
+Actualizar Apps Script al esquema 4 para confirmar ventas. Con esquemas 2 o 3 se puede seguir usando el catálogo y preparar el carrito, pero no confirmar la venta. Con Vite iniciado: `npm run test:sales` prueba el circuito de venta, impresión, stock, conflictos y recuperación de confirmaciones con el código real del backend ejecutado sobre servicios de Sheets simulados.

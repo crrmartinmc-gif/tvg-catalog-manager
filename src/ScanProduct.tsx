@@ -4,6 +4,25 @@ import {
   type IScannerControls,
 } from "@zxing/browser";
 import { X, ScanLine } from "lucide-react";
+
+// Android camera controls are not yet included in TypeScript's DOM types.
+type FocusCapabilities = MediaTrackCapabilities & { focusMode?: string[] };
+async function focusCamera(track: MediaStreamTrack, refocus = false) {
+  const modes = (track.getCapabilities?.() as FocusCapabilities | undefined)?.focusMode;
+  if (!modes || track.readyState !== "live") return;
+  const apply = (focusMode: string) => track.applyConstraints({
+    advanced: [{ focusMode } as MediaTrackConstraintSet],
+  });
+  // One-shot autofocus helps reacquire a label before returning to continuous AF.
+  if (refocus && modes.includes("single-shot")) {
+    try { await apply("single-shot"); } catch { /* Optional camera control. */ }
+  }
+  const mode = modes.includes("continuous") ? "continuous"
+    : modes.includes("single-shot") ? "single-shot" : undefined;
+  if (mode && track.readyState === "live") {
+    try { await apply(mode); } catch { /* Keep scanning on unsupported devices. */ }
+  }
+}
 export function ScanProduct({
   onFind,
   onClose,
@@ -15,17 +34,20 @@ export function ScanProduct({
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const controls = useRef<IScannerControls | null>(null);
+  const cameraTrack = useRef<MediaStreamTrack | null>(null);
   const findRef = useRef(onFind);
   findRef.current = onFind;
   const [manual, setManual] = useState("");
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [ready, setReady] = useState(false);
+  const [canFocus, setCanFocus] = useState(false);
   function find(code: string) {
     const value = code.trim();
     if (!value) return;
     controls.current?.stop();
     setReady(false);
+    cameraTrack.current?.stop();
     setManual(value);
     const outcome = findRef.current(value);
     if (outcome !== true)
@@ -44,6 +66,7 @@ export function ScanProduct({
     let ownedStream: MediaStream | undefined;
     setError("");
     setReady(false);
+    setCanFocus(false);
     const reader = new BrowserMultiFormatReader();
     const target = video.current;
     async function start() {
@@ -57,14 +80,22 @@ export function ScanProduct({
           audio: false,
           video: {
             facingMode: { ideal: "environment" },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
           },
         });
         if (cancelled) {
           ownedStream.getTracks().forEach((track) => track.stop());
           return;
         }
+        const track = ownedStream.getVideoTracks()[0];
+        cameraTrack.current = track;
+        // Configure focus after acquisition; browsers may reject these controls
+        // in getUserMedia even when the active camera supports them.
+        await focusCamera(track);
+        if (cancelled || track.readyState !== "live") return;
+        const modes = (track.getCapabilities?.() as FocusCapabilities | undefined)?.focusMode;
+        setCanFocus(!!modes?.some(mode => mode === "continuous" || mode === "single-shot"));
         scanner = await reader.decodeFromStream(
           ownedStream,
           target,
@@ -81,6 +112,7 @@ export function ScanProduct({
           setReady(true);
         }
       } catch (e) {
+        ownedStream?.getTracks().forEach((track) => track.stop());
         if (cancelled) return;
         const name = e instanceof Error ? e.name : "";
         setError(
@@ -103,6 +135,7 @@ export function ScanProduct({
       controls.current?.stop();
       controls.current = null;
       ownedStream?.getTracks().forEach((track) => track.stop());
+      cameraTrack.current = null;
     };
   }, [attempt]);
   useEffect(() => {
@@ -151,9 +184,17 @@ export function ScanProduct({
         </div>
         <p role="status">
           {ready
-            ? "Cámara lista. Acercá la etiqueta y buscá buena luz."
+            ? "Cámara lista. Mantené el código completo a unos 15–25 cm, con buena luz. Si se ve borroso, alejá un poco el celular."
             : "Podés usar la cámara o ingresar el código de la etiqueta."}
         </p>
+        {ready && canFocus && (
+          <button onClick={() => {
+            const track = cameraTrack.current;
+            if (track) void focusCamera(track, true);
+          }}>
+            Reenfocar código
+          </button>
+        )}
         {error && (
           <div className="error" role="alert">
             {error}
